@@ -2,6 +2,9 @@
 
 CONFIG=/etc/3proxy.cfg
 LANIP="$(uci -q get network.lan.ipaddr)"
+for a in $(ifstatus lan | jsonfilter -e '@["ipv6-prefix-assignment"][*]["local-address"]["address"]'); do
+	LANIP6="$a"
+done
 
 cat << EOF > $CONFIG
 plugin /usr/lib/3proxy/TransparentPlugin.ld.so transparent_plugin
@@ -13,7 +16,9 @@ log @3proxy
 auth iponly
 allow *
 socks -64 -i127.0.0.1 -p1090 -n
+socks -64 -i::1 -p1090 -n
 transparent
 tcppm -i${LANIP} 3128 127.0.0.1 1090
+tcppm -i${LANIP6} 3128 ::1 1090
 notransparent
 EOF
