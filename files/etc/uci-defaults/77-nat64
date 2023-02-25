@@ -1,0 +1,21 @@
+#!/bin/sh
+MODPROBE=/etc/modules.d/33-nat64
+IP6PREFIX="64:ff9b::/96"
+IP4PREFIX="172.16.250.0/24"
+
+# setup kernel module
+cat << EOF > $MODPROBE
+nat64 ipv4_prefix=$IP4PREFIX ipv6_prefix=$IP6PREFIX
+EOF
+
+# setup network
+uci batch << EOF
+set network.nat64=interface
+set network.nat64.proto='none'
+set network.nat64.device='nat64'
+set network.nat64.force_link='1'
+set totd.@totd[-1]=totd
+set totd.@totd[-1].port='10053'
+set totd.@totd[-1].forwarder='127.0.0.1#53'
+set totd.@totd[-1].prefix=$(echo $IP6PREFIX |awk -F[/] '{print $1}')
+EOF
