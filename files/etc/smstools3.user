@@ -1,6 +1,6 @@
 #!/bin/sh
 
-FNUMBER="79672836670 79268150028"
+FNUMBER=""
 TARGET=ya.ru
 
 ROUTER=$(uci -q get system.@system[0].hostname)
