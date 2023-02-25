@@ -1,6 +1,5 @@
 #!/bin/sh
 uci batch << EOF
-delete network.globals
 delete network.wan6
 set network.azp=interface
 set network.azp.device='azp0'
