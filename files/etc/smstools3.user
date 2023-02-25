@@ -1,6 +1,6 @@
 #!/bin/sh
 
-FNUMBER=""
+FNUMBER=
 TARGET=ya.ru
 
 ROUTER=$(uci -q get system.@system[0].hostname)
@@ -17,8 +17,6 @@ function link_(){
 }
 
 function msg_(){
-	# Uncomment line to send ansver only from SMS.
-	#LINK=OFF
 	case $LINK in
 		OFF)
 			if [ $FNUMBER ]; then
@@ -40,71 +38,24 @@ function msg_(){
 if [ "$1" == "RECEIVED" ]; then
 	from=`grep "From:" $2 | awk -F ': ' '{printf $2}'`
 	content=$(sed -e '1,/^$/ d' < "$2")
-	ROOTN=0
-	for n in ${FNUMBER}; do
-		if [ "$from" -eq "$n" ]; then
-			ROOTN=1
-		fi
-	done
-	if [ $ROOTN -eq 1 ]; then
-		COMMAND=$(echo $content | awk '{print $1}')
-		case $COMMAND in
-		reboot)
+
+	if [ "$from" -eq "$FNUMBER" ]; then
+		if [ $(echo $content | grep reboot) ]; then
 			TXT="$ROUTER will be rebooted"
 			link_
 			sleep 5
 			msg_
 			sleep 10
 			reboot
-		;;
-		restart)
-			RIFACE=$(echo $content | awk '{print $2}')
-			if [ $RIFACE ]; then
-				ifdown $RIFACE
-				sleep 3
-				ifup $RIFACE
-				sleep 20
-				link_
-				TXT="$ROUTER. Interfcae \"RIFACE\" reload. LINK $LINK."
-				
-			else	
-				TXT="$ROUTER. Usage restart \"logical interface\""
-			fi
+		elif [ $(echo $content | grep restart) ]; then
+			ifdown wwan
+			sleep 3
+			ifup wwan
+			sleep 20
 			link_
+			TXT="$ROUTER. WWAN reload. LINK $LINK."
 			msg_
-		;;
-		service)
-			SERVICE=$(echo $content | awk '{print $2}')
-			ACTION=$(echo $content | awk '{print $3}')
-			case $ACTION in
-				start|stop|restart|enable|disable) 
-					/etc/init.d/${SERVICE} ${ACTION}
-					TXT="$ROUTER. Service ${SERVICE} ${ACTION}"
-				;;
-				*) TXT="$ROUTER. Usage: ${SERVICE} start|stop|restart|enable|disable" ;;
-			esac
-			link_
-			msg_
-		;;
-		wifi)
-			ACTION=$(echo $content | awk '{print $2}')
-			case $ACTION in
-				up)
-					/sbin/wifi $ACTION
-					TXT="$ROUTER. Wireless enabled"
-				;;
-				down)
-					/sbin/wifi $ACTION
-                                        TXT="$ROUTER. Wireless disabled"
-				;;
-				*) TXT="$ROUTER. Usage: $COMMAND [up|down]"
-				;;
-			esac
-			link_
-			msg_
-		;;
-		help) TXT="$ROUTER. Usage: reboot|restart [interface]|service [name] [action]|wifi [action]" ;;
-		esac
+		fi
 	else
 		text=$(cat <<EOF
 Hostname: $ROUTER
