@@ -4,9 +4,8 @@ CONFIG=/etc/firewall.user
 FUNCTION=/usr/share/ttl_fix.sh
 
 uci batch << EOF
-set firewall.@zone[1].network='azp wan wwan'
-set firewall.@zone[0].network='lan nat64'
-commit
+set firewall.@zone[1].network='wan wwan'
+commit firewall
 EOF
 
 cat << 'EOF' > $CONFIG
@@ -18,6 +17,12 @@ cat << 'EOF' > $CONFIG
 # put custom rules into the root chains e.g. INPUT or FORWARD or into the
 # special user chains, e.g. input_wan_rule or postrouting_lan_rule.
 
+# ANTITTL scanario
+# Select physycal  WWAN interface.
+# By default wwan is wwan0, wwan1, wwanX
+#######################################################
+# WWANIF=wwan0
+#######################################################
 # Choose method for antitethering
 # firewall need restart after changes
 # Aviable methods: ttl, proxy, ttlproxy, false or blank
@@ -56,68 +61,74 @@ if [ ! $METHOD ]; then
 	METHOD=false
 fi
 
+if [ ! $WWANIF ]; then
+	WWANIF=wwan+
+fi
+
 method_ttl(){
-	if [ ! $TTL ]; then
-		TTL=64
-	fi
-	.  /lib/functions/network.sh
-	network_find_wan WAN
-	network_get_device DEV $WAN
-	iptables -t mangle -A OUTPUT -o $DEV -j TTL --ttl-set $TTL
-	iptables -t mangle -A POSTROUTING -o $DEV -j TTL --ttl-set $TTL
-	ip6tables -t mangle -A OUTPUT -o $DEV -j HL --hl-set $TTL
-	ip6tables -t mangle -A POSTROUTING -o $DEV -j HL --hl-set $TTL
-	case $TTL in
-		64|128) TTL_INC=4 ;;
-		*) TTL_INC=5 ;;
-	esac
-	iptables -t mangle -A PREROUTING -i $DEV -m ttl --ttl 1 -j TTL --ttl-inc $TTL_INC
-	uci set firewall.@zone[1].masq='1'
-	uci commit firewall
+        if [ ! $TTL ]; then
+                TTL=64
+        fi
+        case $(($TTL % 2)) in
+                0) TTL_INC=4 ;;
+                1) TTL_INC=5 ;;
+        esac    
+        ip6tables -t mangle -A PREROUTING -i $WWANIF -m hl --hl 1 -j HL --hl-inc $TTL_INC
+        iptables -t mangle -A PREROUTING -i $WWANIF -m ttl --ttl 1 -j TTL --ttl-inc $TTL_INC
+        for ipt in iptables ip6tables; do
+                case $ipt in
+                        iptables) SUFFIX="TTL --ttl-set" ;;
+                        ip6tables) SUFFIX="HL --hl-set" ;;
+                esac
+                $ipt -t mangle -A OUTPUT -o $WWANIF -j $SUFFIX $TTL
+                $ipt -t mangle -A POSTROUTING -o $WWANIF -j $SUFFIX $TTL
+        done
+        uci set firewall.@zone[1].masq='1'
+        uci commit firewall
 }
 
 method_proxy(){
-	# IPv4 and IPv6 proxy
-	for ipt in iptables ip6tables; do
-		case $ipt in
-			iptables)
-				IPADDR=$(uci -q get network.lan.ipaddr)
-				END="${IPADDR}:3128"
-			;;
-			ip6tables)
-				for a in $(ifstatus lan | jsonfilter -e '@["ipv6-prefix-assignment"][*]["local-address"]["address"]'); do
-					IPADDR="$a"
-				done
-				END="[$IPADDR]:3128"
-			;;
-		esac
-		# proxy transparent rules
-		$ipt -t nat -N PROXY
-		$ipt -t nat -A PREROUTING -i br-lan -j PROXY
-		$ipt -t nat -A PROXY ! -d ${IPADDR} \
-			! -s ${IPADDR} -p tcp \
-			-j DNAT --to-destination $END
-	done
-	uci set firewall.@zone[1].masq='0'
-	uci commit firewall
+        # IPv4 and IPv6 proxy
+        for ipt in iptables ip6tables; do
+                case $ipt in
+                        iptables)
+                                IPADDR=$(uci -q get network.lan.ipaddr)
+                                END="${IPADDR}:3128"
+                        ;;
+                        ip6tables)
+                                for a in $(ifstatus lan | jsonfilter -e '@["ipv6-prefix-assignment"][*]["local-address"]["address"]'); do
+                                        IPADDR="$a"
+                                done
+                                END="[$IPADDR]:3128"
+                        ;;
+                esac
+                # proxy transparent rules
+                $ipt -t nat -N PROXY
+                $ipt -t nat -A PREROUTING -i br-lan -j PROXY
+                $ipt -t nat -A PROXY ! -d ${IPADDR} \
+                        ! -s ${IPADDR} -p tcp \
+                -j DNAT --to-destination $END
+        done    
+        uci set firewall.@zone[1].masq='0'
+        uci commit firewall
 }
 
 method_ttlproxy(){
-	method_ttl
-	method_proxy
+        method_ttl
+        method_proxy
 }
 
 if_masq(){
-	uci set firewall.@zone[1].masq='1'
-	uci commit firewall
+        uci set firewall.@zone[1].masq='1'
+        uci commit firewall
 }
 
 
 case $METHOD in
-	ttl) method_ttl ;;
-	proxy) method_proxy ;;
-	ttlproxy) method_ttlproxy ;;
-	*) if_masq ;;
+        ttl) method_ttl ;;
+        proxy) method_proxy ;;
+        ttlproxy) method_ttlproxy ;;
+        *) if_masq ;;
 esac
 
 reload_config
