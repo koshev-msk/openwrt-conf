@@ -33,6 +33,7 @@ speedtestpp
 e2fsprogs
 tcpdump
 htop
+mtr
 # VPN
 wireguard-tools
 openvpn-openssl
