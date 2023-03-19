@@ -5,10 +5,5 @@ set network.azp=interface
 set network.azp.device='azp0'
 set network.azp.proto='none'
 set network.lan.ip6assign='64'
-set network.wwan=interface
-set network.wwan.proto='modemmanager'
-set network.wwan.device='/sys/devices/platform/101c0000.ehci/usb1/1-1/1-1.3'
-set network.wwan.iptype='ipv4'
-set network.wwan.auth='none'
 commit network
 EOF
