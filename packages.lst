@@ -45,6 +45,7 @@ kmod-usb-acm
 kmod-usb-net-qmi-wwan
 kmod-usb-net-cdc-mbim
 kmod-ipt-ipopt
+kmod-usb-storage
 # iptables 
 iptables-mod-ipopt
 iptables-mod-ndpi
