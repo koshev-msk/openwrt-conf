@@ -12,10 +12,10 @@ fi
 probe=0
 while [ -z "$SYSPMODEM" ]; do
 	SYSPMODEM=$(mmcli -J -m $(mmcli -L | awk '{print $1}') | jsonfilter -e '@["modem"]["generic"]["device"]')
-	if [ $probe -gt 10 ]; then
+	if [ $probe -gt 20 ]; then
 		exit 0
 	fi
-	sleep 3
+	sleep 6
 	probe=$(($probe+1))
 done
 
