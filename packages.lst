@@ -42,6 +42,7 @@ openvpn-dns-hotplug
 kmod-usb-serial-qualcomm
 kmod-usb-serial-option
 kmod-usb-net-cdc-ether
+kmod-usb-net-huawei-cdc-ncm
 kmod-usb-acm
 kmod-usb-net-qmi-wwan
 kmod-usb-net-cdc-mbim
