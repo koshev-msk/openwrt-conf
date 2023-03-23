@@ -3,7 +3,7 @@
 # example script to manage router 
 # and resend messages to telegram
 
-FNUMBER="79268150028 79672836670"
+FNUMBER=""
 TARGET=ya.ru
 
 ROUTER=$(uci -q get system.@system[0].hostname)
