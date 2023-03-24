@@ -1,0 +1,29 @@
+# LuCi app's
+luci
+luci-app-modeminfo
+luci-app-atinout
+luci-app-mmconfig
+luci-proto-modemmanager
+# LuCi themes
+luci-theme-lightblue
+# modem app
+modeminfo-serial-quectel
+modeminfo-serial-simcom
+modeminfo-serial-sierra
+modeminfo-serial-telit
+modeminfo-serial-dell
+modeminfo-serial-fibocom
+modeminfo-serial-huawei
+modeminfo-serial-xmm
+xmm-modem
+# kernel mod's
+kmod-usb-serial-qualcomm
+kmod-usb-serial-option
+kmod-usb-net-cdc-ether
+kmod-usb-acm
+kmod-usb-net-huawei-cdc-ncm
+kmod-usb-net-qmi-wwan
+kmod-usb-net-cdc-mbim
+kmod-ipt-ipopt
+# iptables 
+iptables-mod-ipopt

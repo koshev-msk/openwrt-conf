@@ -1,0 +1,6 @@
+#!/bin/sh
+uci batch << EOF
+delete network.wan6
+set network.lan.ip6assign='64'
+commit network
+EOF
