@@ -1,5 +1,5 @@
 #!/bin/sh
-EXAMLE=/usr/share/luci-app-smstools3/smstools3.user
+EXAMPLE=/usr/share/luci-app-smstools3/smstools3.user
 if [ -f $EXAMPLE ]; then
 	cp -rp $EXAMPLE /etc
 fi
