@@ -1,0 +1,11 @@
+#!/bin/sh
+
+uci batch << EOF
+set dhcp.@dnsmasq[0].domainneeded='1'
+set dhcp.@dnsmasq[0].localise_queries='1'
+set dhcp.@dnsmasq[0].strictorder='1'
+set dhcp.@dnsmasq[0].localservice='1'
+set dhcp.@dnsmasq[0].rebind_protection='0'
+commit dhcp
+EOF
+

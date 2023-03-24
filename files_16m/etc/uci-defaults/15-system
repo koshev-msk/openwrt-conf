@@ -1,6 +1,6 @@
 #!/bin/sh
 
-MACHINE=$(awk '/machine/{print $4}' /proc/cpuinfo)
+MACHINE=$(awk '{print $2}' /sys/firmware/devicetree/base/model)
 
 uci batch << EOF
 set system.@system[0].zonename='Europe/Moscow'

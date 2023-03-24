@@ -1,0 +1,9 @@
+#!/bin/sh
+uci batch << EOF
+delete network.wan6
+set network.azp=interface
+set network.azp.device='azp0'
+set network.azp.proto='none'
+set network.lan.ip6assign='64'
+commit network
+EOF

@@ -1,3 +1,3 @@
 # openwrt-conf
 
-Config files for ZBT-WE826-16M
+Config files for devices 16MB ROM and upper

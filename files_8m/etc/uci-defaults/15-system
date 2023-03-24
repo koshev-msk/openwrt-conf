@@ -1,0 +1,8 @@
+#!/bin/sh
+
+MACHINE=$(awk '{print $2}' /sys/firmware/devicetree/base/model)
+
+uci batch << EOF
+set system.@system[0].zonename='Europe/Moscow'
+set system.@system[0].hostname=$MACHINE
+EOF
