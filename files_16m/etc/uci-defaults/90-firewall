@@ -23,6 +23,11 @@ cat << 'EOF' > $CONFIG
 #######################################################
 # WWANIF=wwan0
 #######################################################
+# Enable IPv6
+# Values: true, false or blank
+#######################################################
+# IP6=false
+######################################################
 # Choose method for antitethering
 # firewall need restart after changes
 # Aviable methods: ttl, proxy, ttlproxy, false or blank
@@ -65,6 +70,12 @@ if [ ! $WWANIF ]; then
 	WWANIF=wwan+
 fi
 
+if [ "$IP6" = "true" ]; then
+	TABLES="iptables ip6tables"
+else
+	TABLES="iptables"
+fi
+
 method_ttl(){
         if [ ! $TTL ]; then
                 TTL=64
@@ -73,12 +84,16 @@ method_ttl(){
                 0) TTL_INC=4 ;;
                 1) TTL_INC=5 ;;
         esac    
-        ip6tables -t mangle -A PREROUTING -i $WWANIF -m hl --hl 1 -j HL --hl-inc $TTL_INC
-        iptables -t mangle -A PREROUTING -i $WWANIF -m ttl --ttl 1 -j TTL --ttl-inc $TTL_INC
-        for ipt in iptables ip6tables; do
+        for ipt in ${TABLES}; do
                 case $ipt in
-                        iptables) SUFFIX="TTL --ttl-set" ;;
-                        ip6tables) SUFFIX="HL --hl-set" ;;
+                        iptables)
+				SUFFIX="TTL --ttl-set"
+				$ipt -t mangle -A PREROUTING -i $WWANIF -m ttl --ttl 1 -j TTL --ttl-inc $TTL_INC
+			;;
+                        ip6tables)
+				SUFFIX="HL --hl-set"
+				$ipt -t mangle -A PREROUTING -i $WWANIF -m hl --hl 1 -j HL --hl-inc $TTL_INC
+			;;
                 esac
                 $ipt -t mangle -A OUTPUT -o $WWANIF -j $SUFFIX $TTL
                 $ipt -t mangle -A POSTROUTING -o $WWANIF -j $SUFFIX $TTL
@@ -89,7 +104,7 @@ method_ttl(){
 
 method_proxy(){
         # IPv4 and IPv6 proxy
-        for ipt in iptables ip6tables; do
+        for ipt in ${TABLES}; do
                 case $ipt in
                         iptables)
                                 IPADDR=$(uci -q get network.lan.ipaddr)
