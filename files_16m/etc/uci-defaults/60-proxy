@@ -2,9 +2,7 @@
 
 CONFIG=/etc/3proxy.cfg
 LANIP="$(uci -q get network.lan.ipaddr)"
-for a in $(ifstatus lan | jsonfilter -e '@["ipv6-prefix-assignment"][*]["local-address"]["address"]'); do
-	LANIP6="$a"
-done
+LANIP6="$(uci -q get network.globals.ula_prefix | awk -F [\/] '{print $1"1"}')
 
 cat << EOF > $CONFIG
 plugin /usr/lib/3proxy/TransparentPlugin.ld.so transparent_plugin
