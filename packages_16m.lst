@@ -65,3 +65,6 @@ totd
 kmod-nat64
 # nDPI
 kmod-ipt-ndpi
+# exclude packages
+-ppp
+-ppp-mod-pppoe

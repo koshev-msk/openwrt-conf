@@ -28,3 +28,6 @@ kmod-usb-net-cdc-mbim
 kmod-ipt-ipopt
 # iptables 
 iptables-mod-ipopt
+# exclude packages
+-ppp
+-ppp-mod-pppoe
