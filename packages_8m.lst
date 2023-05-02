@@ -15,6 +15,7 @@ modeminfo-serial-dell
 modeminfo-serial-fibocom
 modeminfo-serial-huawei
 modeminfo-serial-xmm
+modeminfo-serial-gosun
 xmm-modem
 # kernel mod's
 kmod-usb-serial-qualcomm

@@ -17,10 +17,12 @@ luci-theme-lightblue
 modeminfo-qmi
 modeminfo-serial-quectel
 modeminfo-serial-simcom
+modeminfo-serial-sierra
 modeminfo-serial-telit
 modeminfo-serial-dell
 modeminfo-serial-fibocom
 modeminfo-serial-xmm
+modeminfo-serial-gosun
 xmm-modem
 usbutils
 qmi-utils
