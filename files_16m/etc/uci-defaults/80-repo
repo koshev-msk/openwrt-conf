@@ -1,0 +1,13 @@
+#!/bin/sh
+
+. /etc/openwrt_release
+
+echo "src/gz modemfeed http://openwrt.132lan.ru/packages/21.02/packages/${DISTRIB_ARCH}/modemfeed" >> /etc/opkg/customfeeds.conf
+
+FILE=/etc/opkg/keys/0c045b2ab5a62241
+
+cat << 'EOF' > $FILE
+untrusted comment: public key 0c045b2ab5a62241
+RWQMBFsqtaYiQUBLJyFWcco98vKKEN9I1QRAonQBKTQu0yAzNOyPuN1s
+EOF
+
