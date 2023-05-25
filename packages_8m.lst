@@ -2,8 +2,10 @@
 luci
 luci-app-modeminfo
 luci-app-atinout
-luci-app-mmconfig
-luci-proto-modemmanager
+luci-proto-ncm
+luci-proto-3g
+luci-proto-qmi
+luci-proto-xmm
 # LuCi themes
 luci-theme-lightblue
 # modem app
