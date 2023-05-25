@@ -47,6 +47,24 @@
 		"connect": "AT^NDISDUP=${profile},1${apn:+,\\\"$apn\\\"}${username:+,\\\"$username\\\"}${password:+,\\\"$password\\\"}${auth:+,$auth}",
 		"disconnect": "AT^NDISDUP=${profile},0"
 	},
+	"quectel": {
+		"initialize": [
+			"AT+CFUN=1"
+		],
+		"modes": {
+			"preferlte": "AT+QCFG=\\\"nwscanseq\\\",6",
+			"preferumts": "AT+QCFG=\\\"nwscanseq\\\",8",
+			"lte": "AT+QCFG=\\\"nwscanseq\\\",4",
+			"umts": "AT+QCFG=\\\"nwscanseq\\\",9",
+			"gsm": "AT+QCFG=\\\"nwscanseq\\\",1",
+			"auto": "AT+QCFG=\\\"nwscanseq\\\",0"
+		},
+		"configure": [
+			"AT+CGDCONT=${profile},\\\"${pdptype}\\\"${apn:+,\\\"$apn\\\"}"
+		],
+		"connect": "AT+CGACT=1,${profile}",
+		"disconnect": "AT+CGACT=0,${profile}"
+	},
 	"samsung": {
 		"initialize": [
 			"AT",
