@@ -28,5 +28,6 @@ kmod-usb-net-huawei-cdc-ncm
 kmod-usb-net-qmi-wwan
 kmod-usb-net-cdc-mbim
 kmod-ipt-ipopt
+kmod-usb2
 # iptables 
 iptables-mod-ipopt
