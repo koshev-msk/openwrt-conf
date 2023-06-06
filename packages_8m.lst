@@ -1,8 +1,10 @@
 # LuCi app's
 luci
 luci-app-modeminfo
+luci-app-smstools3
 luci-app-atinout
 luci-proto-ncm
+luci-proto-mbim
 luci-proto-3g
 luci-proto-qmi
 luci-proto-xmm
@@ -18,6 +20,7 @@ modeminfo-serial-fibocom
 modeminfo-serial-huawei
 modeminfo-serial-xmm
 modeminfo-serial-gosun
+xl2tpd
 xmm-modem
 # kernel mod's
 kmod-usb-serial-qualcomm
@@ -29,5 +32,15 @@ kmod-usb-net-qmi-wwan
 kmod-usb-net-cdc-mbim
 kmod-ipt-ipopt
 kmod-usb2
+kmod-ipt-ipopt
+kmod-l2tp
+kmod-l2tp-eth
+kmod-l2tp-ip
+kmod-pppol2tp
+kmod-pptp
+kmod-nf-nathelper-extra
+# PPP
+ppp-mod-pptp
 # iptables 
 iptables-mod-ipopt
+
