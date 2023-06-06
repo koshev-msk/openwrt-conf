@@ -51,6 +51,9 @@
 		"initialize": [
 			"AT+CFUN=1"
 		],
+		"configure": [
+			"at+qicsgp=${profile},${context_type},\\\"${apn}\\\",\\\"${username}\\\",\\\"${password}\\\",0"
+		],
 		"modes": {
 			"preferlte": "AT+QCFG=\\\"nwscanseq\\\",6",
 			"preferumts": "AT+QCFG=\\\"nwscanseq\\\",8",
@@ -59,11 +62,8 @@
 			"gsm": "AT+QCFG=\\\"nwscanseq\\\",1",
 			"auto": "AT+QCFG=\\\"nwscanseq\\\",0"
 		},
-		"configure": [
-			"AT+CGDCONT=${profile},\\\"${pdptype}\\\"${apn:+,\\\"$apn\\\"}"
-		],
-		"connect": "AT+CGACT=1,${profile}",
-		"disconnect": "AT+CGACT=0,${profile}"
+		"connect": "AT+qnetdevctl=1,${profile},1",
+		"disconnect": "AT+qnetdevctl=0,${profile},0"
 	},
 	"samsung": {
 		"initialize": [
