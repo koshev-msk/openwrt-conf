@@ -6,6 +6,12 @@
 		"configure": [
 			"AT+CGDCONT=${profile},\\\"${pdptype}\\\"${apn:+,\\\"$apn\\\"}"
 		],
+		"modes": {
+			"preferlte": "AT+ZSNT=7,0,0",
+			"lte": "AT+ZSNT=6,0,0",
+			"umts": "AT+ZSNT=2,0,0",
+			"auto": "AT+ZSNT=0,0,0"
+		},
 		"connect": "AT+ZECMCALL=1",
 		"disconnect": "AT+ZECMCALL=0"
 	},
