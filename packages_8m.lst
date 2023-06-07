@@ -3,6 +3,8 @@ luci
 luci-app-modeminfo
 luci-app-smstools3
 luci-app-atinout
+luci-app-3proxy
+luci-app-openvpn
 luci-proto-ncm
 luci-proto-mbim
 luci-proto-3g
@@ -20,6 +22,7 @@ modeminfo-serial-fibocom
 modeminfo-serial-huawei
 modeminfo-serial-xmm
 modeminfo-serial-gosun
+openvpn-openssl
 xl2tpd
 xmm-modem
 # kernel mod's
