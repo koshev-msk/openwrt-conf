@@ -5,6 +5,7 @@ luci-app-smstools3
 luci-app-atinout
 luci-app-3proxy
 luci-app-openvpn
+luci-app-pingcontrol
 luci-proto-ncm
 luci-proto-mbim
 luci-proto-3g
