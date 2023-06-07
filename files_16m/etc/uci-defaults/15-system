@@ -1,6 +1,18 @@
 #!/bin/sh
 
-MACHINE=$(awk '{print $2}' /sys/firmware/devicetree/base/model)
+board="$(cat /tmp/sysinfo/board_name)"
+
+case $board in
+	zbtlink,zbt-we2802d-8m|\
+	zbtlink,zbt-we2802d-16m|\
+	zbtlink,zbt-we2806-a-8m|\
+	zbtlink,zbt-we2806-a-16m)
+		MACHINE=$(awk '{print $1}' /sys/firmware/devicetree/base/model)
+	;;
+	*)
+		MACHINE=$(awk '{print $2}' /sys/firmware/devicetree/base/model)
+	;;
+esac
 
 uci batch << EOF
 set system.@system[0].zonename='Europe/Moscow'
