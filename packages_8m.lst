@@ -24,6 +24,7 @@ modeminfo-serial-huawei
 modeminfo-serial-xmm
 modeminfo-serial-gosun
 openvpn-openssl
+openvpn-dns-hotplug
 xl2tpd
 xmm-modem
 # kernel mod's
