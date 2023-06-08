@@ -48,4 +48,5 @@ kmod-nf-nathelper-extra
 ppp-mod-pptp
 # iptables 
 iptables-mod-ipopt
-
+# libraries
+lib3proxy
