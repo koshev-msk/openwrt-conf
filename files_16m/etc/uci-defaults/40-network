@@ -5,6 +5,5 @@ set network.azp=interface
 set network.azp.device='azp0'
 set network.azp.proto='none'
 set network.lan.ip6assign='64'
-set xmm-modem.@xmm-modem[-1].enable='0'
 commit network
 EOF
