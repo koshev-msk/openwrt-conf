@@ -125,5 +125,22 @@
 		"connect": "AT+CGACT=1,${profile}",
 		"finalize": "AT+CGDATA=\\\"M-MBIM\\\",${profile},1",
 		"disconnect": "AT+CGACT=0,${profile}"
-	}
+	},
+	"yuge,": {
+		"initialize": [
+			"AT+CFUN=1",
+			"AT+CGDCONT=${profile},\\\"${pdptype}\\\"${apn:+,\\\"$apn\\\"}",
+			"AT+QIPCSGP=${profile},1${apn:+,\\\"$apn\\\"}${username:+,\\\"$username\\\"}${password:+,\\\"$password\\\"}"
+		],
+		"modes": {
+			"preferlte": "AT^MODECONFIG=56",
+			"preferumts": "AT^MODECONFIG=55",
+			"lte": "AT^MODECONFIG=38",
+			"umts": "AT^MODECONFIG=14",
+			"auto": "AT^MODECONFIG=2"
+		},
+		"connect": "AT+RNDISCALL=1",
+		"disconnect": "AT+RNDISCALL=0"
+        }
+
 }
