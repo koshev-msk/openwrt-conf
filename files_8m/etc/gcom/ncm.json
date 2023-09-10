@@ -58,7 +58,7 @@
 			"AT+CFUN=1"
 		],
 		"configure": [
-			"AT+CGDCONT=${profile},\\\"${pdptype}\\\"${apn:+,\\\"$apn\\\"}"
+			"at+qicsgp=${profile},1,\\\"${apn}\\\",\\\"${username}\\\",\\\"${password}\\\",0"
 		],
 		"modes": {
 			"preferlte": "AT+QCFG=\\\"nwscanseq\\\",6",
@@ -68,8 +68,8 @@
 			"gsm": "AT+QCFG=\\\"nwscanseq\\\",1",
 			"auto": "AT+QCFG=\\\"nwscanseq\\\",0"
 		},
-		"connect": "AT+CGACT=1,${profile}",
-		"disconnect": "AT+CGACT=0,${profile}"
+		"connect": "AT+qnetdevctl=1,${profile},1",
+		"disconnect": "AT+qnetdevctl=0,${profile},0"
 	},
 	"samsung": {
 		"initialize": [
@@ -141,6 +141,26 @@
 		},
 		"connect": "AT+RNDISCALL=1",
 		"disconnect": "AT+RNDISCALL=0"
-        }
-
+        },
+	"thinkwill": {
+		"initialize": [
+			"AT+CFUN=1",
+			"AT+ZGACT=0,${profile}",
+			"AT+CGACT=0,${profile}"
+		],
+		"configure": [
+			"AT+CGDCONT=${profile},\\\"${pdptype}\\\"${apn:+,\\\"$apn\\\"}"
+		],
+		"modes": {
+			"preferlte": "AT^SYSCONFIG=2,0,1,2",
+			"preferumts": "AT^SYSCONFIG=2,1,1,2",
+			"gsm": "AT^SYSCONFIG=13,0,1,2",
+			"umts": "AT^SYSCONFIG=14,0,1,2",
+			"lte": "AT^SYSCONFIG=17,0,1,2",
+			"auto": "AT^SYSCONFIG=2,0,1,2"
+		},
+		"connect": "AT+CGACT=1,${profile}",
+		"finalize": "AT+ZGACT=1,${profile}",
+		"disconnect": "AT+ZGACT=0,${profile}"
+	}
 }
