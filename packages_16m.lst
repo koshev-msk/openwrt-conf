@@ -7,6 +7,8 @@ luci-app-smstools3
 luci-app-3proxy
 luci-app-pingcontrol
 luci-proto-modemmanager
+luci-proto-ncm
+luci-proto-xmm
 luci-app-ttyd
 luci-app-telegrambot
 luci-proto-wireguard
@@ -23,6 +25,9 @@ modeminfo-serial-dell
 modeminfo-serial-fibocom
 modeminfo-serial-xmm
 modeminfo-serial-gosun
+modeminfo-serial-yuge
+modeminfo-serial-tw
+modeminfo-serial-meig
 xmm-modem
 usbutils
 qmi-utils
@@ -52,7 +57,6 @@ kmod-ipt-ipopt
 kmod-usb-storage
 # iptables 
 iptables-mod-ipopt
-iptables-mod-ndpi
 # libraries
 lib3proxy
 # MMC support
@@ -60,8 +64,3 @@ kmod-fs-ext4
 kmod-fs-vfat
 block-mount
 cfdisk
-# NAT64
-totd
-kmod-nat64
-# nDPI
-kmod-ipt-ndpi

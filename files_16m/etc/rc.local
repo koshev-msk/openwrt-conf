@@ -1,0 +1,16 @@
+# Put your custom commands here that should be executed once
+# the system init finished. By default this file does nothing.
+
+# MeIG SLM828 Detect
+#echo '2dee 4d22 ff 2cb7 0104' > /sys/bus/usb-serial/drivers/option1/new_id
+#echo '2dee 4d22 ff 2cb7 0104' > /sys/bus/usb/drivers/qmi_wwan/new_id
+
+# GosunCN Welink GM510 Detect
+#echo '0305 1415 ff' > /sys/bus/usb-serial/drivers/option1/new_id
+
+# ThinkWill ML7820+ Detect
+#echo '19d2 0532 ff' > /sys/bus/usb-serial/drivers/option1/new_id
+
+# Yuge CLM920 ASR Chipt Detect
+#echo '1286 4e3c ff' > /sys/bus/usb-serial/drivers/option1/new_id
+exit 0

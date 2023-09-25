@@ -23,6 +23,9 @@ modeminfo-serial-fibocom
 modeminfo-serial-huawei
 modeminfo-serial-xmm
 modeminfo-serial-gosun
+modeminfo-serial-yuge
+modeminfo-serial-tw
+modeminfo-serial-meig
 openvpn-openssl
 openvpn-dns-hotplug
 xl2tpd
