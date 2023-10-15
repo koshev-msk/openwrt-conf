@@ -30,6 +30,6 @@ rename_tty(){
 }
 
 
-TTYNAME=MODEM
+TTYNAME=USB5
 rename_tty
 EOF
