@@ -1,0 +1,6 @@
+#!/bin/sh
+
+uci batch << EOF
+set firewall.@zone[1].network='wan wwan azp'
+commit firewall
+EOF
