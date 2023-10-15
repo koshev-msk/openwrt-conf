@@ -10,6 +10,7 @@ luci-proto-modemmanager
 luci-proto-ncm
 luci-proto-xmm
 luci-app-ttyd
+luci-app-ttl
 luci-app-telegrambot
 luci-proto-wireguard
 luci-app-openvpn
@@ -35,7 +36,6 @@ qmi-utils
 ipset
 whois
 ethstatus
-speedtestpp
 6in4
 e2fsprogs
 tcpdump

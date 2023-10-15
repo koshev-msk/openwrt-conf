@@ -49,6 +49,7 @@ set network.wwan.proto='modemmanager'
 set network.wwan.device=$DEV
 set network.wwan.iptype='ipv4'
 set network.wwan.auth='none'
+set modemconfig.@modem[0].device=$DEV
 EOF
 	if [ $APN ]; then
 		uci set network.wwan.apn=$APN
