@@ -53,6 +53,27 @@
 		"connect": "AT^NDISDUP=${profile},1${apn:+,\\\"$apn\\\"}${username:+,\\\"$username\\\"}${password:+,\\\"$password\\\"}${auth:+,$auth}",
 		"disconnect": "AT^NDISDUP=${profile},0"
 	},
+	"incorporated": {
+		"initialize": [
+			"AT+CFUN=1",
+			"AT+CGACT=0,${profile}",
+			"AT+CGATT=0"
+		],
+		"configure": [
+			"AT+CGDCONT=${profile},\\\"${pdptype}\\\"${apn:+,\\\"$apn\\\"}",
+			"AT+CGAUTH=${profile},${auth:-0}${username:+,\\\"$username\\\"}${password:+,\\\"$password\\\"}"
+		],
+		"modes": {
+			"auto": "AT+CNMP=2",
+			"preferlte": "AT+CNMP=38",
+			"preferumts": "AT+CNMP=14",
+			"umts": "AT+CNMP=14",
+			"lte": "AT+CNMP=38"
+		},
+		"connect": "AT+CGACT=1,${profile}",
+		"finalize": "AT+CGATT=1",
+		"disconnect": "AT+CGACT=0,${profile}"
+	},
 	"quectel": {
 		"initialize": [
 			"AT+CFUN=1"
