@@ -170,7 +170,7 @@
 			"AT+CGACT=0,${profile}"
 		],
 		"configure": [
-			"AT+ZGPCOAUTH=${profile}${username:+,\\\"$username\\\"}${password:+,\\\"$password\\\"},${auth:-0}",
+			"AT+ZGPCOAUTH=${profile},\\\"${username}\\\",\\\"${password}\\\",${auth:-0}",
 			"AT+CGDCONT=${profile},\\\"${pdptype}\\\"${apn:+,\\\"$apn\\\"}"
 		],
 		"modes": {

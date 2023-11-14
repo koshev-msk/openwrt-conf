@@ -85,7 +85,7 @@ proto_ncm_setup() {
 	[ $? -ne 0 ] && {
 		echo "Unsupported modem"
 		proto_notify_error "$interface" UNSUPPORTED_MODEM
-		# More modems failed start atter boot
+		# More modems failed start after boot
 		#proto_set_available "$interface" 0
 		return 1
 	}
