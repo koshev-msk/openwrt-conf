@@ -5,6 +5,7 @@ luci-app-smstools3
 luci-app-atinout
 luci-app-3proxy
 luci-app-openvpn
+luci-app-telegrambot
 luci-app-pingcontrol
 luci-app-ttl
 luci-proto-ncm
@@ -48,9 +49,17 @@ kmod-l2tp-ip
 kmod-pppol2tp
 kmod-pptp
 kmod-nf-nathelper-extra
+# wireless
+wpad-basic-openssl
 # PPP
 ppp-mod-pptp
 # iptables 
 iptables-mod-ipopt
 # libraries
 lib3proxy
+libustream-openssl20201210
+# removed pkgs. Curl must be build with openssl library
+-wpad-basic-wolfssl
+-libustream-wolfssl
+-libustream-wolfssl20201210
+-libwolfssl5.5.3.99a5b54a

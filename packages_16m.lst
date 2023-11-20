@@ -57,10 +57,19 @@ kmod-ipt-ipopt
 kmod-usb-storage
 # iptables 
 iptables-mod-ipopt
+# wireless
+wpad-basic-openssl
 # libraries
 lib3proxy
+libustream-openssl20201210
 # MMC support
 kmod-fs-ext4
 kmod-fs-vfat
 block-mount
 cfdisk
+# removed pkgs. Curl must be build with openssl library
+-wpad-basic-wolfssl
+-libustream-wolfssl
+-libustream-wolfssl20201210
+-libwolfssl5.5.3.99a5b54a
+
