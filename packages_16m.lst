@@ -1,75 +1,104 @@
 # LuCi app's
 luci
 luci-app-modeminfo
-luci-app-atinout
 luci-app-mmconfig
 luci-app-smstools3
-luci-app-3proxy
 luci-app-pingcontrol
-luci-proto-modemmanager
-luci-proto-ncm
-luci-proto-xmm
-luci-app-ttyd
-luci-app-ttl
-luci-app-telegrambot
-luci-proto-wireguard
+luci-app-sqm
+luci-app-atinout
+luci-app-3proxy
 luci-app-openvpn
+luci-app-telegrambot
+luci-app-ttl
+luci-app-ttyd
+# Network proto
+luci-proto-xmm
+luci-proto-fm350
+luci-proto-mbim
+luci-proto-qmi
+luci-proto-wireguard
+luci-proto-vpnc
+luci-proto-openconnect
+luci-proto-3g
+luci-proto-ncm
+# localize RU
+#luci-i18n-base-ru
+#luci-i18n-modeminfo-ru
+#luci-i18n-mmconfig-ru
+#luci-i18n-smstools3-ru
+#luci-i18n-sqm-ru
+#luci-i18n-atinout-ru
+#luci-i18n-3proxy-ru
+#luci-i18n-openvpn-ru
+#luci-i18n-pingcontrol-ru
+#luci-i18n-telegrambot-ru
+#luci-i18n-ttl-ru
+#luci-i18n-ttyd-ru
+#luci-i18n-opkg-ru
+#luci-i18n-firewall-ru
 # LuCi themes
-luci-theme-lightblue
+#luci-theme-lightblue
 # modem app
-modeminfo-qmi
-modeminfo-serial-quectel
-modeminfo-serial-simcom
-modeminfo-serial-sierra
-modeminfo-serial-telit
-modeminfo-serial-dell
-modeminfo-serial-fibocom
 modeminfo-serial-xmm
-modeminfo-serial-gosun
-modeminfo-serial-yuge
-modeminfo-serial-tw
-modeminfo-serial-meig
-xmm-modem
-usbutils
-qmi-utils
-# app's
-ipset
-whois
-ethstatus
-6in4
-e2fsprogs
-tcpdump
-htop
-mtr
-# VPN
-wireguard-tools
+modeminfo-serial-dell
+modeminfo-serial-quectel
+modeminfo-serial-sierra
+modeminfo-serial-fibocom
+modeminfo-serial-simcom
+modeminfo-serial-telit
+modeminfo-serial-huawei
+modeminfo-telegram
 openvpn-openssl
 openvpn-dns-hotplug
+xl2tpd
+# remove nft
+-firewall4
+-nftables
+-nftables-json
+-kmod-nft-core
+-kmod-nft-fib
+-kmod-nft-nat 
+-kmod-nft-offload
+# remove mbedtls
+-libustream-mbedtls
+-libmbedtls12
+-libustream-mbedtls20201210
+# add iptables
+firewall
+kmod-ip6tables
+kmod-ipt-conntrack
+kmod-ipt-core
+kmod-ipt-nat
+kmod-ipt-offload
+kmod-nf-ipt
+kmod-nf-ipt6
+ip6tables-zz-legacy
+iptables-zz-legacy
 # kernel mod's
 kmod-usb-serial-qualcomm
 kmod-usb-serial-option
 kmod-usb-net-cdc-ether
-kmod-usb-net-huawei-cdc-ncm
 kmod-usb-acm
+kmod-usb-net-huawei-cdc-ncm
 kmod-usb-net-qmi-wwan
 kmod-usb-net-cdc-mbim
+kmod-usb2
+kmod-usb3
 kmod-ipt-ipopt
-kmod-usb-storage
-# iptables 
-iptables-mod-ipopt
+kmod-l2tp
+kmod-l2tp-eth
+kmod-l2tp-ip
+kmod-pppol2tp
+kmod-pptp
+kmod-nf-nathelper-extra
 # wireless
 wpad-basic-openssl
+# PPP
+ppp-mod-pptp
+# iptables 
+iptables-mod-ipopt
 # libraries
 lib3proxy
 libustream-openssl20201210
-# MMC support
-kmod-fs-ext4
-kmod-fs-vfat
-block-mount
-cfdisk
 # removed pkgs. Curl must be build with openssl library
--wpad-basic-wolfssl
--libustream-wolfssl
--libustream-wolfssl20201210
--libwolfssl5.5.3.99a5b54a
-
+-wpad-basic-mbedtls

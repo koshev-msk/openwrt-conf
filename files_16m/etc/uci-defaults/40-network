@@ -1,9 +1,13 @@
 #!/bin/sh
+# genetate ula prefix from default ll address
+ula=$(awk -F [:] '{print "fc00:" tolower($3$4) ":" tolower($5$6) "::/48"}' /sys/class/net/eth0/address)
+# config network
 uci batch << EOF
 delete network.wan6
 set network.azp=interface
 set network.azp.device='azp0'
 set network.azp.proto='none'
 set network.lan.ip6assign='64'
+set network.globals.ula_prefix=$ula
 commit network
 EOF

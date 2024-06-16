@@ -5,31 +5,31 @@ FILE=/etc/hotplug.d/usb/90-ttyrename
 cat << 'EOF' > $FILE
 #!/bin/sh
 
-rename_tty(){
-	case $ACTION in
-		bind)
-			case ${DRIVER} in
-				*option*)
-					DEVTTY=$(ls /sys/$DEVPATH/ | grep tty)
-					DEVNUM=$(ls -1 /dev/tty${TTYNAME}* | wc -l)
+case $ACTION in
+	bind)
+		case ${DRIVER} in
+			*option*)
+				TTYNAME=USB5
+				DEVTTY=$(ls /sys/$DEVPATH/ | grep tty)
+				DEVNUM=$(ls -1 /dev/tty${TTYNAME}* | wc -l)
+				ln -s /dev/${DEVTTY} /dev/tty${TTYNAME}${DEVNUM}
+			;;
+			*cdc_acm*)
+				TTYNAME=ACM5
+				DEVTTY=$(ls /sys/$DEVPATH/tty/ | grep tty)
+				if [ $DEVTTY ]; then
+					DEVNUM=$(ls -1 /dev/ | grep ${TTYNAME} | wc -l)
 					ln -s /dev/${DEVTTY} /dev/tty${TTYNAME}${DEVNUM}
-				;;
-				*cdc_acm*)
-					DEVTTY=$(ls /sys/$DEVPATH/tty/ | grep tty)
-					if [ $DEVTTY ]; then
-						DEVNUM=$(ls -1 /dev/ | grep ${TTYNAME} | wc -l)
-						ln -s /dev/${DEVTTY} /dev/tty${TTYNAME}${DEVNUM}
-					fi
-				;;
-			esac
-		;;
-		remove)
-			rm -f /dev/tty${TTYNAME}*
-		;;
-	esac
-}
-
-
-TTYNAME=USB5
-rename_tty
+				fi
+			;;
+		esac
+	;;
+	remove)
+		case ${DRIVER} in
+			*option*) TTYNAME=USB5 ;;
+			*cdc_acm*) TTYNAME=ACM5 ;;
+		esac
+		rm -f /dev/tty${TTYNAME}*
+	;;
+esac
 EOF

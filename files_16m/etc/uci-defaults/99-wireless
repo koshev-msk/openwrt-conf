@@ -1,5 +1,9 @@
 #!/bin/sh
 
+if ! [ -x /usr/sbin/wpad -o -x /usr/sbin/hostapd ]; then
+	exit 0
+fi
+
 board="$(cat /tmp/sysinfo/board_name)"
 
 case $board in
@@ -23,7 +27,6 @@ enable_wifi(){
 			2g)
 				uci -q set wireless.radio${r}.country='RU'
 				uci -q set wireless.radio${r}.noscan='1'
-				uci -q set wireless.radio${r}.htmode='HT40'
 				uci -q set wireless.default_radio${r}.ssid=${MACHINE}_2G_${SUFFIX}
 				uci -q delete wireless.radio${r}.disabled='1'
 			;;

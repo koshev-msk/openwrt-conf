@@ -17,4 +17,5 @@ esac
 uci batch << EOF
 set system.@system[0].zonename='Europe/Moscow'
 set system.@system[0].hostname=$MACHINE
+set system.@system[0].timezone='MSK-3'
 EOF

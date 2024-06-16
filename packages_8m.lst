@@ -1,37 +1,60 @@
 # LuCi app's
 luci
 luci-app-modeminfo
+luci-app-mmconfig
 luci-app-smstools3
+luci-app-pingcontrol
+luci-app-sqm
 luci-app-atinout
 luci-app-3proxy
 luci-app-openvpn
 luci-app-telegrambot
-luci-app-pingcontrol
 luci-app-ttl
-luci-proto-ncm
-luci-proto-mbim
-luci-proto-3g
-luci-proto-qmi
-luci-proto-xmm
+luci-app-ttyd
+# localize RU
+luci-i18n-base-ru
+luci-i18n-modeminfo-ru
+luci-i18n-mmconfig-ru
+luci-i18n-smstools3-ru
+luci-i18n-sqm-ru
+luci-i18n-atinout-ru
+luci-i18n-3proxy-ru
+luci-i18n-openvpn-ru
+luci-i18n-pingcontrol-ru
+luci-i18n-telegrambot-ru
+luci-i18n-ttl-ru
+luci-i18n-ttyd-ru
+luci-i18n-opkg-ru
+luci-i18n-firewall-ru
 # LuCi themes
-luci-theme-lightblue
+#luci-theme-lightblue
 # modem app
-modeminfo-serial-quectel
-modeminfo-serial-simcom
-modeminfo-serial-sierra
-modeminfo-serial-telit
-modeminfo-serial-dell
-modeminfo-serial-fibocom
-modeminfo-serial-huawei
-modeminfo-serial-xmm
-modeminfo-serial-gosun
-modeminfo-serial-yuge
-modeminfo-serial-tw
-modeminfo-serial-meig
 openvpn-openssl
 openvpn-dns-hotplug
 xl2tpd
-xmm-modem
+# remove nft
+-firewall4
+-nftables
+-nftables-json
+-kmod-nft-core
+-kmod-nft-fib
+-kmod-nft-nat 
+-kmod-nft-offload
+# remove mbedtls
+-libustream-mbedtls
+-libmbedtls12
+-libustream-mbedtls20201210
+# add iptables
+firewall
+kmod-ip6tables
+kmod-ipt-conntrack
+kmod-ipt-core
+kmod-ipt-nat
+kmod-ipt-offload
+kmod-nf-ipt
+kmod-nf-ipt6
+ip6tables-zz-legacy
+iptables-zz-legacy
 # kernel mod's
 kmod-usb-serial-qualcomm
 kmod-usb-serial-option
@@ -58,7 +81,4 @@ iptables-mod-ipopt
 lib3proxy
 libustream-openssl20201210
 # removed pkgs. Curl must be build with openssl library
--wpad-basic-wolfssl
--libustream-wolfssl
--libustream-wolfssl20201210
--libwolfssl5.5.3.99a5b54a
+-wpad-basic-mbedtls

@@ -79,7 +79,7 @@
 			"AT+CFUN=1"
 		],
 		"configure": [
-			"at+qicsgp=${profile},1,\\\"${apn}\\\",\\\"${username}\\\",\\\"${password}\\\",0"
+			"at+qicsgp=${profile},${context_type},\\\"${apn}\\\",\\\"${username}\\\",\\\"${password}\\\",0"
 		],
 		"modes": {
 			"preferlte": "AT+QCFG=\\\"nwscanseq\\\",6",
