@@ -2,7 +2,7 @@
 
 . /etc/openwrt_release
 
-echo "src/gz modemfeed http://openwrt.132lan.ru/packages/${DISTIB_RELEASE%.*}/packages/${DISTRIB_ARCH}/modemfeed" >> /etc/opkg/customfeeds.conf
+echo "src/gz modemfeed http://openwrt.132lan.ru/packages/${DISTRIB_RELEASE%.*}/packages/${DISTRIB_ARCH}/modemfeed" >> /etc/opkg/customfeeds.conf
 
 FILE=/etc/opkg/keys/0c045b2ab5a62241
 
