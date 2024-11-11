@@ -39,13 +39,17 @@ luci-proto-ncm
 # LuCi themes
 #luci-theme-lightblue
 # modem app
+modeminfo-qmi
 modeminfo-serial-xmm
 modeminfo-serial-dell
 modeminfo-serial-quectel
 modeminfo-serial-sierra
 modeminfo-serial-fibocom
+modeminfo-serial-fm350
+modeminfo-serial-meig
 modeminfo-serial-simcom
 modeminfo-serial-telit
+modeminfo-serial-thales
 modeminfo-serial-huawei
 modeminfo-telegram
 openvpn-openssl
@@ -70,11 +74,16 @@ kmod-ipt-conntrack
 kmod-ipt-core
 kmod-ipt-nat
 kmod-ipt-offload
+kmod-ipt-nfqueue
+kmod-ipt-conntrack-extra
 kmod-nf-ipt
 kmod-nf-ipt6
 ip6tables-zz-legacy
 iptables-zz-legacy
+iptables-mod-nfqueue
+iptables-mod-conntrack-extra
 # kernel mod's
+kmod-nfnetlink-queue
 kmod-usb-serial-qualcomm
 kmod-usb-serial-option
 kmod-usb-net-cdc-ether
@@ -102,3 +111,4 @@ lib3proxy
 libustream-openssl20201210
 # removed pkgs. Curl must be build with openssl library
 -wpad-basic-mbedtls
+youtubeUnblock
