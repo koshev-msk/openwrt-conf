@@ -36,6 +36,9 @@ elif [ "$WORKDAY" = "true" ]; then
 			SLEEP="7200"
 		;;
 	esac
+else
+	MESSAGE="is holiday!"
+	SLEEP="false"
 fi
 
 # send log message
