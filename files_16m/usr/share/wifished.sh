@@ -30,6 +30,7 @@ calendar(){
 # see holiday script in this directory
 #calendar
 
+SLEEP="${SLEEP:=0}"
 
 # stuff code
 if [ $2 ]; then
