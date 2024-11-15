@@ -1,8 +1,12 @@
 #!/bin/sh
 # Russian working calendar script by Konstatntine Shevlakov at <shevlakov@132lan.ru>
 
-# start at random time. Comment next line if disable it.
-sleep $(awk -v min=20 -v max=3600 'BEGIN{srand(); print int(rand()*(max-min+1))+min}')
+# start at random time. Use -s or --sleep arg.
+case $1 in
+	-s|--sleep)
+		sleep $(awk -v min=20 -v max=3600 'BEGIN{srand(); print int(rand()*(max-min+1))+min}')
+	;;
+esac
 
 # define variables 
 DATE=$(date +%Y/%m/%d)
