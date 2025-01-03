@@ -11,6 +11,7 @@ luci-app-openvpn
 luci-app-telegrambot
 luci-app-ttl
 luci-app-ttyd
+luci-app-mwan3
 # Network proto
 luci-proto-xmm
 luci-proto-fm350
@@ -45,7 +46,6 @@ modeminfo-serial-dell
 modeminfo-serial-quectel
 modeminfo-serial-sierra
 modeminfo-serial-fibocom
-modeminfo-serial-fm350
 modeminfo-serial-meig
 modeminfo-serial-simcom
 modeminfo-serial-telit
@@ -64,9 +64,9 @@ xl2tpd
 -kmod-nft-nat 
 -kmod-nft-offload
 # remove mbedtls
--libustream-mbedtls
--libmbedtls12
--libustream-mbedtls20201210
+#-libustream-mbedtls
+#-libmbedtls12
+#-libustream-mbedtls20201210
 # add iptables
 firewall
 kmod-ip6tables
@@ -101,14 +101,14 @@ kmod-pppol2tp
 kmod-pptp
 kmod-nf-nathelper-extra
 # wireless
-wpad-basic-openssl
+#wpad-basic-openssl
 # PPP
 ppp-mod-pptp
 # iptables 
 iptables-mod-ipopt
 # libraries
 lib3proxy
-libustream-openssl20201210
+#libustream-openssl20201210
 # removed pkgs. Curl must be build with openssl library
--wpad-basic-mbedtls
-youtubeUnblock
+#-wpad-basic-mbedtls
+#youtubeUnblock

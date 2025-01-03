@@ -13,4 +13,9 @@
 
 # Yuge CLM920 ASR Chipt Detect
 #echo '1286 4e3c ff' > /sys/bus/usb-serial/drivers/option1/new_id
+
+# Fibocom NL678 GTUSBMODE 22 (modem + AT + RMNET)
+#echo '2cb7 0109 ff 12d1 1406' > /sys/bus/usb-serial/drivers/option1/new_id
+#echo '2cb7 0109 ff 1bc7 1261' > /sys/bus/usb/drivers/qmi_wwan/new_id
+
 exit 0
