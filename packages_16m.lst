@@ -8,13 +8,12 @@ luci-app-sqm
 luci-app-atinout
 luci-app-3proxy
 luci-app-openvpn
-luci-app-telegrambot
+#luci-app-telegrambot
 luci-app-ttl
 luci-app-ttyd
 luci-app-mwan3
 # Network proto
 luci-proto-xmm
-luci-proto-fm350
 luci-proto-mbim
 luci-proto-qmi
 luci-proto-wireguard
@@ -64,9 +63,10 @@ xl2tpd
 -kmod-nft-nat 
 -kmod-nft-offload
 # remove mbedtls
-#-libustream-mbedtls
+-libustream-mbedtls
 #-libmbedtls12
-#-libustream-mbedtls20201210
+-libmbedtls21
+-libustream-mbedtls20201210
 # add iptables
 firewall
 kmod-ip6tables
@@ -108,7 +108,12 @@ ppp-mod-pptp
 iptables-mod-ipopt
 # libraries
 lib3proxy
-#libustream-openssl20201210
+libustream-openssl20201210
 # removed pkgs. Curl must be build with openssl library
-#-wpad-basic-mbedtls
+-wpad-basic-mbedtls
+hostapd-openssl
+wpa-supplicant-openssl
 #youtubeUnblock
+# replace to dnsmasq ipset
+-dnsmasq
+dnsmasq-full
