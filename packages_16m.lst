@@ -11,16 +11,16 @@ luci-app-openvpn
 #luci-app-telegrambot
 luci-app-ttl
 luci-app-ttyd
-luci-app-mwan3
+#luci-app-mwan3
 # Network proto
 luci-proto-xmm
-luci-proto-mbim
-luci-proto-qmi
+#luci-proto-mbim
+#luci-proto-qmi
 luci-proto-wireguard
-luci-proto-vpnc
-luci-proto-openconnect
-luci-proto-3g
-luci-proto-ncm
+#luci-proto-vpnc
+#luci-proto-openconnect
+#luci-proto-3g
+#luci-proto-ncm
 # localize RU
 #luci-i18n-base-ru
 #luci-i18n-modeminfo-ru

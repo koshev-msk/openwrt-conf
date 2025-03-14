@@ -14,7 +14,7 @@ SUBSYSTEMS=="usb", ATTRS{bInterfaceNumber}=="?*", ENV{.MM_USBIFNUM}="$attr{bInte
 ATTRS{idVendor}=="2cb7", ATTRS{idProduct}=="0007", ENV{.MM_USBIFNUM}=="04", ENV{ID_MM_PORT_IGNORE}="1"
 ATTRS{idVendor}=="2cb7", ATTRS{idProduct}=="0007", ENV{.MM_USBIFNUM}=="06", ENV{ID_MM_PORT_IGNORE}="1"
 
-# Fibocom FM150
+# Fibocom FM150/NL678 GTUSBMODE=17
 #  ttyUSB0 (if #0): QCDM port
 #  ttyUSB1 (if #1): AT port
 #  ttyUSB2 (if #2): AT port (ingnore)
@@ -23,5 +23,17 @@ ATTRS{idVendor}=="2cb7", ATTRS{idProduct}=="0104", ENV{.MM_USBIFNUM}=="00", ENV{
 ATTRS{idVendor}=="2cb7", ATTRS{idProduct}=="0104", ENV{.MM_USBIFNUM}=="01", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
 ATTRS{idVendor}=="2cb7", ATTRS{idProduct}=="0104", ENV{.MM_USBIFNUM}=="02", ENV{ID_MM_PORT_IGNORE}="1"
 ATTRS{idVendor}=="2cb7", ATTRS{idProduct}=="0104", ENV{.MM_USBIFNUM}=="03", ENV{ID_MM_PORT_IGNORE}="1"
+
+# Fibocom NL678 GTUSBMODE=22
+# ttyUSB0 (if #0): AT port
+# ttyUSB1 (if #1): AT secondary
+ATTRS{idVendor}=="2cb7", ATTRS{idProduct}=="0109", ENV{.MM_USBIFNUM}=="00", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
+ATTRS{idVendor}=="2cb7", ATTRS{idProduct}=="0109", ENV{.MM_USBIFNUM}=="01", ENV{ID_MM_PORT_IGNORE}="1"
+
+# Fibocom NL678 GTUSBMODE=23
+# ttyUSB0 (if #0): AT port
+# ttyUSB1 (if #1): AT secondary
+ATTRS{idVendor}=="2cb7", ATTRS{idProduct}=="010a", ENV{.MM_USBIFNUM}=="00", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
+ATTRS{idVendor}=="2cb7", ATTRS{idProduct}=="010a", ENV{.MM_USBIFNUM}=="01", ENV{ID_MM_PORT_IGNORE}="1"
 
 LABEL="mm_fibocom_port_types_end"
