@@ -1,0 +1,51 @@
+# Resend incoming SMS Messages to telegram bot
+# or define phone number
+
+# Telegram bot token
+token=$(uci -q get telegrambot.config.chat_id)
+# Send chat id messages
+chat_id=$(uci -q get telegrambot.config.bot_token)
+# Phone number to resend message without "+"
+PHONE=""
+
+
+# Send to Telegram
+send_telegram(){
+	/usr/bin/curl -d "chat_id=$chat_id&text=$text" \
+		-X POST https://api.telegram.org/bot"$token"/sendMessage
+}
+
+# Send to SMS
+send_sms(){
+	/usr/bin/sendsms $PHONE "$text"
+}
+
+# Body Message
+msg_body(){
+cat <<EOF
+Hostname: $HOSTNAME
+$content
+From: $from
+EOF
+}
+
+# Select way to resend incoming message
+# if variables $token an $telegram not defined
+# message send via builin smsd utility
+run_msg(){
+	if [ "$token" = "" -o "$chat_id" = "" ]; then
+		if [ "$from" != "$PHONE" -a "$PHONE" != "" ]; then
+			send_sms
+		fi
+	else
+	        send_telegram
+	fi
+}
+
+# Stuff
+if [ "$1" == "RECEIVED" ]; then
+        from=$(awk -F ': ' '/From:/{printf $2}' $2)
+        content=$(sed -e '1,/^$/ d' < "$2")
+        text=$(msg_body)
+	run_msg
+fi
