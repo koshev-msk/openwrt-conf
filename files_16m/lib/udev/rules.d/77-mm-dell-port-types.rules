@@ -21,6 +21,10 @@ ATTRS{idVendor}=="413c", ATTRS{idProduct}=="81e0", ENV{.MM_USBIFNUM}=="02", ENV{
 ATTRS{idVendor}=="413c", ATTRS{idProduct}=="81e0", ENV{.MM_USBIFNUM}=="03", ENV{ID_MM_PORT_IGNORE}="1"
 ATTRS{idVendor}=="413c", ATTRS{idProduct}=="81e0", ENV{.MM_USBIFNUM}=="04", ENV{ID_MM_PORT_TYPE_GPS}="1"
 ATTRS{idVendor}=="413c", ATTRS{idProduct}=="81e0", ENV{.MM_USBIFNUM}=="05", ENV{ID_MM_PORT_TYPE_QCDM}="1"
+ATTRS{idVendor}=="413c", ATTRS{idProduct}=="81e4", ENV{.MM_USBIFNUM}=="02", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
+ATTRS{idVendor}=="413c", ATTRS{idProduct}=="81e4", ENV{.MM_USBIFNUM}=="03", ENV{ID_MM_PORT_IGNORE}="1"
+ATTRS{idVendor}=="413c", ATTRS{idProduct}=="81e4", ENV{.MM_USBIFNUM}=="04", ENV{ID_MM_PORT_TYPE_GPS}="1"
+ATTRS{idVendor}=="413c", ATTRS{idProduct}=="81e4", ENV{.MM_USBIFNUM}=="05", ENV{ID_MM_PORT_TYPE_QCDM}="1"
 
 # Dell DW5820e
 #  if 02: AT port
