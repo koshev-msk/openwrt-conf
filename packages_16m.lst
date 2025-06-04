@@ -8,6 +8,7 @@ luci-app-sqm
 luci-app-atinout
 luci-app-3proxy
 luci-app-openvpn
+luci-app-mwan3
 #luci-app-telegrambot
 luci-app-ttl
 luci-app-ttyd
@@ -92,6 +93,7 @@ kmod-usb-acm
 kmod-usb-net-huawei-cdc-ncm
 kmod-usb-net-qmi-wwan
 kmod-usb-net-cdc-mbim
+kmod-usb-storage
 kmod-usb2
 kmod-usb3
 kmod-ipt-ipopt
@@ -118,3 +120,9 @@ wpa-supplicant-openssl
 # replace to dnsmasq ipset
 -dnsmasq
 dnsmasq-full
+ifmetric
+# FS support
+e2fsprogs
+cfdisk
+kmod-fs-ext4
+block-mount

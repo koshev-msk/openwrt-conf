@@ -31,7 +31,7 @@ EOF
 
 # Select way to resend incoming message
 # if variables $token an $telegram not defined
-# message send via builin smsd utility
+# message send via smsd utility
 run_msg(){
 	if [ "$token" = "" -o "$chat_id" = "" ]; then
 		if [ "$from" != "$PHONE" -a "$PHONE" != "" ]; then

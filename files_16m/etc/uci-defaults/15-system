@@ -2,20 +2,97 @@
 
 board="$(cat /tmp/sysinfo/board_name)"
 
+fixmodems(){
+cat << EOF > /etc/init.d/fixmodem
+#!/bin/sh /etc/rc.common
+#
+START=65
+
+start(){
+	for g in $@; do
+		echo 0 > /sys/class/gpio/\${g}/value
+		sleep 3
+		echo 1 > /sys/class/gpio/\${g}/value
+	done
+}
+EOF
+chmod +x /etc/init.d/fixmodem
+
+/etc/init.d/fixmodem enable
+/etc/init.d/fixmodem start
+}
+
+
+mwan3_conf(){
+	case $1 in
+		1m)
+			[ -f /usr/share/config/mwan3_1m ] && {
+				cp /usr/share/config/mwan3_2m /etc/config/mwan3
+			}
+		;;
+		2m)
+			[ -f /usr/share/config/mwan3_2m ] && {
+				cp /usr/share/config/mwan3_2m /etc/config/mwan3
+			}
+		;;
+	esac
+
+cat << 'EOF' >> /etc/mwan3.user
+JSON=$(ifstatus $INTERFACE)
+
+get_vars(){
+        jsonfilter -s "$JSON" \
+                -e "METRIC=@['metric']" \
+                -e "GW=@['route'][*]['nexthop']"
+}
+
+eval $(get_vars)
+
+
+case $ACTION in
+	connected) ifmetric $DEVICE $METRIC ;;
+	disconnected) ifmetric $DEVICE $(($METRIC+1000)) ;;
+esac
+EOF
+}
+
+MACHINE=$(awk '{print $2}' /sys/firmware/devicetree/base/model)
+
 case $board in
 	zbtlink,zbt-we2802d-8m|\
 	zbtlink,zbt-we2802d-16m|\
 	zbtlink,zbt-we2806-a-8m|\
 	zbtlink,zbt-we2806-a-16m)
 		MACHINE=$(awk '{print $1}' /sys/firmware/devicetree/base/model)
+		mwan3_conf 1m
+	;;
+	zbtlink,zbt-z8102ax-nand|\
+	zbtlink,zbt-z8102-emmc)
+		fixmodems 5g1 5g2
+		mwan3_conf 2m
+	;;
+	zbtlink,zbt-wg2107)
+		fixmodems modem1pwr modem2pwr
+		mwan3_conf 2m
+	;;
+	zbtlink,zbt-cpe2801-16m|\
+	zbtlink,zbt-cpe2801-32m)
+		fixmodems mpcie1 mcpie2
+		mwan3_conf 2m
+	;;
+	irz,ru-41u|\
+	irz,ru-41l)
+		fixmodems m0reset m1reset
+		mwan3_conf 2m
 	;;
 	*)
-		MACHINE=$(awk '{print $2}' /sys/firmware/devicetree/base/model)
+		mwan3_conf 1m
 	;;
 esac
 
 uci batch << EOF
-set system.@system[0].zonename='Europe/Moscow'
-set system.@system[0].timezone='MSK-3'
-set system.@system[0].hostname=$MACHINE
+set system.@system[-1].zonename='Europe/Moscow'
+set system.@system[-1].timezone='MSK-3'
+set system.@system[-1].hostname=$MACHINE
+commit system
 EOF
