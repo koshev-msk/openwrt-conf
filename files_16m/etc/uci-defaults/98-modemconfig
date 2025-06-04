@@ -1,0 +1,102 @@
+#!/bin/sh
+
+# modem configurator via mmcli ytility
+# by koshev-msk copyright 2025
+
+# check mmcli utility
+[ -x /usr/bin/mmcli ] || exit 0
+
+args(){
+    echo "$#"
+}
+
+
+read_modem_list(){
+	MODEMS="$(echo $(mmcli -L | awk '{print $1}'))"
+}
+
+
+# stand up modems 
+standby_modems(){
+	i=0
+	while true; do
+		! [ "$MODEMS" ] && {
+			read_modem_list
+			[ $i -gt 30 ] && {
+				exit 0
+			}
+		} || {
+			break
+		}
+		sleep 1
+		i=$(($i+1))
+	done
+}
+
+
+get_modem_param(){
+	jsonfilter -s "$(mmcli -m ${m} -J)" \
+			-e "DEVICE=$['modem']['generic']['device']" \
+			-e "PORTS=$['modem']['generic']['ports'][*]" \
+			-e "OPERATOR=$['modem']['3gpp']['operator-code']"
+}
+
+
+configure_uci(){
+	# modems in system
+	ARGSLENMODEM=$(args $MODEMS)
+	# general config modeminfo
+	uci set modeminfo.@general[0]=general
+	uci set modeminfo.@general[0].index='1'
+	uci set modeminfo.@general[0].decimail='1'
+
+	mn=1
+	for m in $MODEMS; do
+		# enable MODEMS
+		mmcli -m ${m} -e
+		sleep 5
+		eval $(echo $(get_modem_param ) | sed -e 's/export//g')
+		case $OPERATOR in
+			25001) APN=internet.mts.ru ;;
+			25011) APN=internet.yota ;;
+			25020) APN=internet.tele2.ru ;;
+			25099) APN=internet.beeline.ru ;;
+			*) APN=internet ;;
+		esac
+		[ "$ARGSLENMODEM" -eq "1" ] && {
+			ifmodemname=modem
+		} || {
+			ifmodemname=modem${mn}
+		}
+		ATPORT=$(echo $PORTS | awk '{ for (i=1; i<=NF; i++) { if ($(i+1) == "(at)") { print $i; break; }}}')
+		# set uci network
+		! [ "x${m}" = "x" ] && {
+			uci set network.$ifmodemname=interface
+			uci set network.$ifmodemname.proto=modemmanager
+			uci set network.$ifmodemname.device=$DEVICE
+			uci set network.$ifmodemname.iptype=ipv4
+			uci set network.$ifmodemname.apn=$APN
+			uci set network.$ifmodemname.allowedauth=none
+			uci set network.$ifmodemname.signalrate='10'
+			uci set network.$ifmodemname.init_epsbearer=default
+			uci set network.$ifmodemname.metric=${mn}00
+			uci add_list firewall.@zone[1].network="$ifmodemname"
+		}
+		# set modeminfo
+		! [ "$ATPORT" = "" ] && {
+			uci add modeminfo modeminfo
+			uci set modeminfo.@modeminfo[-1].device=/dev/${ATPORT}
+		}
+		mn=$(($mn+1))
+	done
+	uci commit
+	reload_config
+}
+
+stuff(){
+	standby_modems
+	configure_uci
+}
+
+sleep 120 && stuff &
+

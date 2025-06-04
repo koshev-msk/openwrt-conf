@@ -11,3 +11,19 @@ set network.lan.ip6assign='64'
 set network.globals.ula_prefix=$ula
 commit network
 EOF
+
+# fix error ifup L850 modem
+cat << 'EOF' > /etc/hotplug.d/iface/01-mm-error
+#!/bin/sh
+
+error(){
+        ERROR_CODE=$(ifstatus $1 | jsonfilter -e '@["errors"][*]["code"]')
+        [ "$ERROR_CODE" = "MM_3GPP_OPERATOR_REGISTRATION_FAILED" ] && {
+                ifup $1
+        }
+}
+
+[ "$ACTION" = "ifup-failed" ] && {
+        sleep 10 && error $INTERFACE &
+}
+EOF
