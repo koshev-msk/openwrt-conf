@@ -6,7 +6,7 @@ fixmodems(){
 cat << EOF > /etc/init.d/fixmodem
 #!/bin/sh /etc/rc.common
 #
-START=65
+START=50
 
 start(){
 	for g in $@; do
@@ -59,15 +59,8 @@ EOF
 MACHINE=$(awk '{print $2}' /sys/firmware/devicetree/base/model)
 
 case $board in
-	zbtlink,zbt-we2802d-8m|\
-	zbtlink,zbt-we2802d-16m|\
-	zbtlink,zbt-we2806-a-8m|\
-	zbtlink,zbt-we2806-a-16m)
-		MACHINE=$(awk '{print $1}' /sys/firmware/devicetree/base/model)
-		mwan3_conf 1m
-	;;
 	zbtlink,zbt-z8102ax-nand|\
-	zbtlink,zbt-z8102-emmc)
+	zbtlink,zbt-z8102ax-emmc)
 		fixmodems 5g1 5g2
 		mwan3_conf 2m
 	;;
@@ -78,6 +71,12 @@ case $board in
 	zbtlink,zbt-cpe2801-16m|\
 	zbtlink,zbt-cpe2801-32m)
 		fixmodems mpcie1 mcpie2
+		mwan3_conf 2m
+	;;
+	zbtlink,zbt-wg1602-16m|\
+	zbtlink,zbt-wg1602-v04-16m|\
+	zbtlink,zbt-wg1602-v04-32m)
+		fixmodems 4g1-pwr 4g2-pwr
 		mwan3_conf 2m
 	;;
 	irz,ru-41u|\

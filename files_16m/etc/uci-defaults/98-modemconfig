@@ -4,7 +4,11 @@
 # by koshev-msk copyright 2025
 
 # check mmcli utility
+
 [ -x /usr/bin/mmcli ] || exit 0
+
+RES=/usr/share/modeminfo/modem.list
+NODE=MODEMCONFIG
 
 args(){
     echo "$#"
@@ -16,7 +20,7 @@ read_modem_list(){
 }
 
 
-# stand up modems 
+# stand up modems
 standby_modems(){
 	i=0
 	while true; do
@@ -33,15 +37,41 @@ standby_modems(){
 	done
 }
 
-
+# get modem parameters
 get_modem_param(){
 	jsonfilter -s "$(mmcli -m ${m} -J)" \
 			-e "DEVICE=$['modem']['generic']['device']" \
 			-e "PORTS=$['modem']['generic']['ports'][*]" \
 			-e "OPERATOR=$['modem']['3gpp']['operator-code']"
 }
-
-
+# setting up modeminfo dashboard
+modeminfo_conf(){
+	case $ATPORT in
+		*ttyUSB*|*ttyACM*)
+			uci add modeminfo modeminfo
+                        uci set modeminfo.@modeminfo[-1].device=/dev/${ATPORT}
+		;;
+		*cdc-wdm*)
+			uci add modeminfo modeminfo
+			uci set modeminfo.@modeminfo[-1].qmi_mode=1
+			uci set modeminfo.@modeminfo[-1].qmi_proxy=1
+			uci set modeminfo.@modeminfo[-1].device_qmi=/dev/${ATPORT}
+		;;
+	esac
+}
+# setting up network interface
+iface_modemmanager(){
+	uci set network.$ifmodemname=interface
+	uci set network.$ifmodemname.proto=modemmanager
+	uci set network.$ifmodemname.device=$DEVICE
+	uci set network.$ifmodemname.iptype=ipv4
+	uci set network.$ifmodemname.apn=$APN
+	uci set network.$ifmodemname.allowedauth=none
+	uci set network.$ifmodemname.signalrate='10'
+	uci set network.$ifmodemname.init_epsbearer=default
+	uci set network.$ifmodemname.metric=${mn}00
+}
+# run system configurator
 configure_uci(){
 	# modems in system
 	ARGSLENMODEM=$(args $MODEMS)
@@ -56,6 +86,15 @@ configure_uci(){
 		mmcli -m ${m} -e
 		sleep 5
 		eval $(echo $(get_modem_param ) | sed -e 's/export//g')
+		# FAMILY modem. get VIDPID of modem
+		VID=$(cat ${DEVICE}/idVendor)
+		PID=$(cat ${DEVICE}/idProduct)
+		VIDPID="${VID}${PID}"
+		[ -r ${RES} ] && {
+			FAMILY=$(awk -F [\;] '/'$VIDPID'/{print toupper($2)}' $RES)
+			logger -t "$NODE" "Found family $FAMILY modem: ${VID}:${PID}"
+		}
+		# get APN from MCCMNC code
 		case $OPERATOR in
 			25001) APN=internet.mts.ru ;;
 			25011) APN=internet.yota ;;
@@ -63,32 +102,47 @@ configure_uci(){
 			25099) APN=internet.beeline.ru ;;
 			*) APN=internet ;;
 		esac
+
 		[ "$ARGSLENMODEM" -eq "1" ] && {
 			ifmodemname=modem
 		} || {
 			ifmodemname=modem${mn}
 		}
-		ATPORT=$(echo $PORTS | awk '{ for (i=1; i<=NF; i++) { if ($(i+1) == "(at)") { print $i; break; }}}')
+		# check unsupported modems
+		case $VIDPID in
+			8087095a|2c7c6000|2c7c6026|\
+			12864e3c|19d20532|305a1415|\
+			0e8d7126|0e8d7127|2cd20001|\
+			2cd20004|19d21404|19d21424)
+				NOT_SUPPORT_MM=1
+			;;
+		esac
+		# check modems if have one AT port
+		case $FAMILY in
+			SIERRA|THALES) ATPORT=$(echo "$PORTS" | awk '{for (i=1; i<=NF; i++) if($i ~ /cdc-wdm/) {print $i; exit}}') ;;
+			*) ATPORT=$(echo "$PORTS" | awk '{ for (i=1; i<=NF; i++) { if ($(i+1) == "(at)") { print $i; break; }}}') ;;
+		esac
+
 		# set uci network
 		! [ "x${m}" = "x" ] && {
-			uci set network.$ifmodemname=interface
-			uci set network.$ifmodemname.proto=modemmanager
-			uci set network.$ifmodemname.device=$DEVICE
-			uci set network.$ifmodemname.iptype=ipv4
-			uci set network.$ifmodemname.apn=$APN
-			uci set network.$ifmodemname.allowedauth=none
-			uci set network.$ifmodemname.signalrate='10'
-			uci set network.$ifmodemname.init_epsbearer=default
-			uci set network.$ifmodemname.metric=${mn}00
-			uci add_list firewall.@zone[1].network="$ifmodemname"
+			iface_modemmanager
+			logger -t "$NODE" "Setting up modem interface \"$ifmodemname\""
 		}
 		# set modeminfo
 		! [ "$ATPORT" = "" ] && {
-			uci add modeminfo modeminfo
-			uci set modeminfo.@modeminfo[-1].device=/dev/${ATPORT}
+			modeminfo_conf
 		}
 		mn=$(($mn+1))
+		unset ATPORT
 	done
+	[ "$NOT_SUPPORT_MM" = "1" ] && {
+		logger -t "$NODE" "WARNING: One or more installed modems not fully supported by modemmanager. Please manualy configure interfaces."
+		for a in stop disable; do
+			/etc/init.d/modemmanager ${a}
+		done
+	} || {
+		logger -t "$NODE" "Modem interface(s) setup complete."
+	}
 	uci commit
 	reload_config
 }
@@ -99,4 +153,3 @@ stuff(){
 }
 
 sleep 120 && stuff &
-
