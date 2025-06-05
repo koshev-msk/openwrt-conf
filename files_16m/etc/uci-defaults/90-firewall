@@ -1,7 +1,7 @@
 #!/bin/sh
 
 uci batch << EOF
-add_list firewall.@zone[1].network='wan'
 add_list firewall.@zone[1].network='azp'
+del_list firewall.@zone[1].network='wan6'
 commit firewall
 EOF

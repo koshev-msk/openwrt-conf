@@ -126,6 +126,7 @@ configure_uci(){
 		# set uci network
 		! [ "x${m}" = "x" ] && {
 			iface_modemmanager
+			uci add_list firewall.@zone[1].network=$ifmodemname
 			logger -t "$NODE" "Setting up modem interface \"$ifmodemname\""
 		}
 		# set modeminfo
