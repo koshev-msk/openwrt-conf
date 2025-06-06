@@ -118,13 +118,12 @@ configure_uci(){
 			;;
 			# fix L850 modem
 			2cb70007)
+				L850=1
 				NOT_SUPPORT_MM=0
 			;;
 			*)
+				L850=0
 				NOT_SUPPORT_MM=0
-				[ -x /etc/init.d/fixmodem ] && {
-					/etc/init.d/fixmodem disable
-				}
 			;;
 		esac
 		# check modems if have one AT port
@@ -148,6 +147,11 @@ configure_uci(){
 		mn=$(($mn+1))
 		unset ATPORT
 	done
+	[ "$L850" = "0" ] &&
+		[ -x /etc/init.d/fixmodem ] && {
+			/etc/init.d/fixmodem disable
+		}
+	}
 	[ "$NOT_SUPPORT_MM" = "1" ] && {
 		logger -t "$NODE" "WARNING: One or more installed modems not fully supported by modemmanager. Service modemmanager is stopped. Please manualy configure interfaces."
 		for a in stop disable; do
