@@ -72,6 +72,11 @@ case $board in
 		fixmodems mpcie1 mcpie2
 		mwan3_conf 2m
 	;;
+	zbtlink,zbt-we826-t3-16m|\
+	zbtlink,zbt-we826-t3-32m)
+		fixmodems modem
+		mwan3_conf 1m
+	;;
 	zbtlink,zbt-wg1602-16m|\
 	zbtlink,zbt-wg1602-v04-16m|\
 	zbtlink,zbt-wg1602-v04-32m)
@@ -81,6 +86,9 @@ case $board in
 	irz,ru-41u|\
 	irz,ru-41l)
 		fixmodems m0reset m1reset
+		mwan3_conf 2m
+	;;
+	mikrotik,routerboard-m33g)
 		mwan3_conf 2m
 	;;
 	*)
