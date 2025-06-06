@@ -147,7 +147,7 @@ configure_uci(){
 		mn=$(($mn+1))
 		unset ATPORT
 	done
-	[ "$L850" = "0" ] &&
+	[ "$L850" = "0" ] && {
 		[ -x /etc/init.d/fixmodem ] && {
 			/etc/init.d/fixmodem disable
 		}
