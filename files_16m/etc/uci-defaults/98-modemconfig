@@ -116,6 +116,16 @@ configure_uci(){
 			2cd20004|19d21404|19d21424)
 				NOT_SUPPORT_MM=1
 			;;
+			# fix L850 modem
+			2cb70007)
+				NOT_SUPPORT_MM=0
+			;;
+			*)
+				NOT_SUPPORT_MM=0
+				[ -x /etc/init.d/fixmodem ] && {
+					/etc/init.d/fixmodem disable
+				}
+			;;
 		esac
 		# check modems if have one AT port
 		case $FAMILY in
@@ -124,10 +134,12 @@ configure_uci(){
 		esac
 
 		# set uci network
-		! [ "x${m}" = "x" ] && {
+		[ "x${m}" != "x" ] && [ "$NOT_SUPPORT_MM" = "0" ] && {
 			iface_modemmanager
 			uci add_list firewall.@zone[1].network=$ifmodemname
-			logger -t "$NODE" "Setting up modem interface \"$ifmodemname\""
+			logger -t "$NODE" "Setting up modem interface \"$ifmodemname\" with APN: ${APN}"
+		} || {
+			logger -t "$NODE" "WARNING: modem: ${VID}:${PID} not supported by modemmanager. Please manualy configure interface."
 		}
 		# set modeminfo
 		! [ "$ATPORT" = "" ] && {
@@ -137,7 +149,7 @@ configure_uci(){
 		unset ATPORT
 	done
 	[ "$NOT_SUPPORT_MM" = "1" ] && {
-		logger -t "$NODE" "WARNING: One or more installed modems not fully supported by modemmanager. Please manualy configure interfaces."
+		logger -t "$NODE" "WARNING: One or more installed modems not fully supported by modemmanager. Service modemmanager is stopped. Please manualy configure interfaces."
 		for a in stop disable; do
 			/etc/init.d/modemmanager ${a}
 		done

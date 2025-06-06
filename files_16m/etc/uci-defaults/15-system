@@ -17,7 +17,6 @@ start(){
 }
 EOF
 chmod +x /etc/init.d/fixmodem
-
 /etc/init.d/fixmodem enable
 /etc/init.d/fixmodem start
 }
