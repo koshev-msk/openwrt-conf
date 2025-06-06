@@ -169,4 +169,13 @@ stuff(){
 	configure_uci
 }
 
-sleep 120 && stuff &
+SLEEP=120
+# More arch need random times to initialise
+[ -f /etc/openwrt_release ] && {
+	. /etc/openwrt_release
+	case $DISTRIB_TARGET in
+		*mt76x8*|*mt7620*|*ath79*) SLEEP=240 ;;
+	esac
+}
+
+sleep $SLEEP && stuff &
