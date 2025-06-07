@@ -2,6 +2,14 @@
 
 board="$(cat /tmp/sysinfo/board_name)"
 
+remove_unused_init(){
+	[ -x /etc/init.d/modem_switch ] && {
+		/etc/init.d/modem_switch disable
+		rm -f /etc/init.d/modem_switch
+	}
+}
+
+
 fixmodems(){
 cat << EOF > /etc/init.d/fixmodem
 #!/bin/sh /etc/rc.common
@@ -120,6 +128,10 @@ case $board in
 		mwan3_conf 1m
 	;;
 esac
+
+! [ "$board" = "netgear,lbr20" ] && {
+	remove_unused_init
+}
 
 uci batch << EOF
 set system.@system[-1].zonename='Europe/Moscow'

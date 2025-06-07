@@ -16,7 +16,7 @@ args(){
 
 
 read_modem_list(){
-	MODEMS="$(echo $(mmcli -L | awk '{print $1}'))"
+	eval $(jsonfilter -s "$(mmcli -L -J)" -e "MODEMS=$['modem-list'][*]")
 }
 
 
@@ -32,7 +32,7 @@ standby_modems(){
 		} || {
 			break
 		}
-		sleep 1
+		sleep 4
 		i=$(($i+1))
 	done
 }
@@ -68,8 +68,15 @@ iface_modemmanager(){
 	uci set network.$ifmodemname.apn=$APN
 	uci set network.$ifmodemname.allowedauth=none
 	uci set network.$ifmodemname.signalrate='10'
-	uci set network.$ifmodemname.init_epsbearer=default
 	uci set network.$ifmodemname.metric=${mn}00
+}
+
+iface_mm_bearer(){
+	# Huawei not support bearers
+	case $VIDPID in
+		12d11*) uci set network.$ifmodemname.init_epsbearer=none ;;
+		*) uci set network.$ifmodemname.init_epsbearer=default ;;
+	esac
 }
 # run system configurator
 configure_uci(){
@@ -79,7 +86,8 @@ configure_uci(){
 	uci set modeminfo.@general[0]=general
 	uci set modeminfo.@general[0].index='1'
 	uci set modeminfo.@general[0].decimail='1'
-
+	NOT_SUPPORT_MM=1
+	L850=0
 	mn=1
 	for m in $MODEMS; do
 		# enable MODEMS
@@ -91,8 +99,10 @@ configure_uci(){
 		PID=$(cat ${DEVICE}/idProduct)
 		VIDPID="${VID}${PID}"
 		[ -r ${RES} ] && {
-			FAMILY=$(awk -F [\;] '/'$VIDPID'/{print toupper($2)}' $RES)
-			logger -t "$NODE" "Found family $FAMILY modem: ${VID}:${PID}"
+			[ "$(args $FAMILY)" -eq "1" ] && {
+				FAMILY=$(awk -F [\;] '/'$VIDPID'/{print toupper($2)}' $RES)
+				logger -t "$NODE" "Found family $FAMILY modem: ${VID}:${PID}"
+			}
 		}
 		# get APN from MCCMNC code
 		case $OPERATOR in
@@ -109,23 +119,26 @@ configure_uci(){
 			ifmodemname=modem${mn}
 		}
 		# check unsupported modems
-		case $VIDPID in
-			8087095a|2c7c6000|2c7c6026|\
-			12864e3c|19d20532|305a1415|\
-			0e8d7126|0e8d7127|2cd20001|\
-			2cd20004|19d21404|19d21424)
-				NOT_SUPPORT_MM=1
-			;;
-			# fix L850 modem
-			2cb70007)
-				L850=1
-				NOT_SUPPORT_MM=0
-			;;
-			*)
-				L850=0
-				NOT_SUPPORT_MM=0
-			;;
-		esac
+		[ "x${VIDPID}" != "x" ] && {
+			case $VIDPID in
+				8087095a|2c7c6000|2c7c6026|\
+				12864e3c|19d20532|305a1415|\
+				0e8d7126|0e8d7127|2cd20001|\
+				2cd20004|19d21404|19d21424)
+					continue
+				;;
+				# fix L850 modem
+				2cb70007)
+					L850=1
+					NOT_SUPPORT_MM=0
+				;;
+				*)
+					NOT_SUPPORT_MM=0
+				;;
+			esac
+		} || {
+			NOT_SUPPORT_MM=1
+		}
 		# check modems if have one AT port
 		case $FAMILY in
 			SIERRA|THALES) ATPORT=$(echo "$PORTS" | awk '{for (i=1; i<=NF; i++) if($i ~ /cdc-wdm/) {print $i; exit}}') ;;
@@ -135,6 +148,7 @@ configure_uci(){
 		# set uci network
 		[ "x${m}" != "x" ] && [ "$NOT_SUPPORT_MM" = "0" ] && {
 			iface_modemmanager
+			iface_mm_bearer
 			uci add_list firewall.@zone[1].network=$ifmodemname
 			logger -t "$NODE" "Setting up modem interface \"$ifmodemname\" with APN: ${APN}"
 		} || {
@@ -153,7 +167,7 @@ configure_uci(){
 		}
 	}
 	[ "$NOT_SUPPORT_MM" = "1" ] && {
-		logger -t "$NODE" "WARNING: One or more installed modems not fully supported by modemmanager. Service modemmanager is stopped. Please manualy configure interfaces."
+		logger -t "$NODE" "WARNING: One or more installed modems not fully supported by modemmanager. Service modemmanager is stopped."
 		for a in stop disable; do
 			/etc/init.d/modemmanager ${a}
 		done
