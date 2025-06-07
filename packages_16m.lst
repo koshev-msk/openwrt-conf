@@ -9,6 +9,7 @@ luci-app-atinout
 luci-app-3proxy
 luci-app-openvpn
 luci-app-mwan3
+luci-app-commands
 #luci-app-telegrambot
 luci-app-ttl
 luci-app-ttyd
