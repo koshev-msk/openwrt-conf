@@ -124,6 +124,11 @@ case $board in
 	mikrotik,routerboard-m33g)
 		mwan3_conf 2m
 	;;
+	# fix LED
+	zbtlink,zbt-we826-16m)
+		uci set system.led_wifi_led.dev='phy0-ap0'
+		mwan3_conf 1m
+	;;
 	*)
 		mwan3_conf 1m
 	;;
