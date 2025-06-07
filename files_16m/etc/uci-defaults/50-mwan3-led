@@ -1,0 +1,124 @@
+#!/bin/sh
+#
+# mwan3 modems and colors led config
+
+mwan3_bled_1m(){
+
+cat << EOF >> /etc/mwan3.user
+led(){
+	case \$INTERFACE in
+		modem)
+			case \$1 in
+				online)
+					ON=none
+					OFF=default-on
+					VALUE_ON=0
+					VALUE_OFF=1
+				;;
+				offline)
+					ON=default-on
+					OFF=none
+					VALUE_ON=1
+					VALUE_OFF=0
+				;;
+			esac
+			echo \${OFF} > /sys/class/leds/${LED1}/trigger
+			echo \${VALUE_OFF} > /sys/class/leds/${LED1}/brightness
+			echo \${ON} > /sys/class/leds/${LED2}/trigger
+			echo \${VALUE_ON} > /sys/class/leds/${LED2}/brightness
+		;;
+	esac
+}
+
+
+case \$ACTION in
+	connected) led online ;;
+	disconnected) led offline ;;
+esac
+EOF
+}
+
+
+# mwan3 two modem config and two led
+mwan3_2led_2m(){
+cat << EOF >> /etc/mwan3.user
+led(){
+	case \$1 in
+		on) TRIGGER=default-on ;;
+		off) TRIGGER=none ;;
+	esac
+	case \$INTERFACE in
+		modem1) LED="$LED1" ;;
+		modem2) LED="$LED2" ;;
+	esac
+	echo \$TRIGGER > /sys/class/leds/\${LED}/trigger
+}
+
+case \$ACTION in
+        connected) led on ;;
+        disconnected) led off ;;
+esac
+EOF
+}
+
+
+# mwan3 one modem config and one led
+mwan3_1led_1m(){
+cat << EOF >> /etc/mwan3.user
+led(){
+	case \$1 in
+		on) TRIGGER=default-on ;;
+		off) TRIGGER=none ;;
+	esac
+	case \$INTERFACE in
+		modem) LED="$LED" ;;
+	esac
+	echo \$TRIGGER > /sys/class/leds/\${LED}/trigger
+}
+case \$ACTION in
+	connected) led on ;;
+	disconnected) led off ;;
+esac
+EOF
+}
+
+
+# set mwan3.user config
+board="$(cat /tmp/sysinfo/board_name)"
+
+case $board in
+	beeline,smartbox-turbo-plus|\
+	beeline,smartbox-giga|\
+	beeline,smartbox-flash)
+		LED1="blue:wan"
+		LED2="green:status"
+		mwan3_bled_1m
+	;;
+	huasifei,ws1208v2-16m|\
+	huasifei,ws1208v2-32m)
+		LED="green:cellular"
+		mwan3_1led_1m
+	;;
+	huastlink,hc-g60)
+		LED1="blue:status"
+		LED2="green:status"
+		mwan3_bled_1m
+	;;
+	zbtlink,zbt-wg2107|\
+	zbtlink,zbt-cpe2801-32m)
+		LED1="green:wwan1"
+		LED2="green:wwan2"
+		mwan3_2led_2m
+	;;
+	zbtlink,zbt-z8102ax-nand|\
+	zbtlink,zbt-z8102ax-emmc)
+		LED1="blue:usb-0"
+		LED2="blue:usb-1"
+		mwan3_2led_2m
+	;;
+	zbtlink,zbt-wg1608-16m|\
+	zbtlink,zbt-wg1608-32m)
+		LED="green:wwan"
+		mwan3_1led_1m
+	;;
+esac
