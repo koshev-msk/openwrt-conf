@@ -126,6 +126,10 @@ case $board in
 	;;
 	# fix LED
 	zbtlink,zbt-we826-16m)
+		uci del system.led_wifi_led.mode
+		uci add_list system.led_wifi_led.mode='link'
+		uci add_list system.led_wifi_led.mode='tx'
+		uci add_list system.led_wifi_led.mode='rx'
 		uci set system.led_wifi_led.dev='phy0-ap0'
 		mwan3_conf 1m
 	;;
