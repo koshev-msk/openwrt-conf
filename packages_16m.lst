@@ -124,6 +124,8 @@ dnsmasq-full
 ifmetric
 # FS support
 e2fsprogs
+mkf2fs
 cfdisk
 kmod-fs-ext4
+kmod-fs-f2fs
 block-mount
