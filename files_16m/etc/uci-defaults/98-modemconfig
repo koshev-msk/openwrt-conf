@@ -20,6 +20,25 @@ read_modem_list(){
 }
 
 
+# atinout cmd
+atinout_cfg_nl678(){
+cat << 'EOF' > /etc/atcommands.user
+Demo command "ATI";ATI
+NL678 - в NCM(23);AT+GTUSBMODE=23
+NL678 - в QMI(22);AT+GTUSBMODE=22
+NL678 - в QMI(17);AT+GTUSBMODE=17
+NL678 - перезагрузить;AT+CFUN=1,1
+EOF
+}
+
+atinout_cfg_l850(){
+cat << 'EOF' > /etc/atcommands.user
+Demo command "ATI";ATI
+L850 - в MBIM;AT+GTUSBMODE=7
+L850 - перезагрузить;AT+CFUN=15
+EOF
+}
+
 # stand up modems
 standby_modems(){
 	i=0
@@ -74,7 +93,12 @@ iface_modemmanager(){
 iface_mm_bearer(){
 	# NCM/ECM mode not support bearers
 	case $VIDPID in
-		12d11*|2cb710a) uci set network.$ifmodemname.init_epsbearer=none ;;
+		12d11*) uci set network.$ifmodemname.init_epsbearer=none ;;
+		*2cb7010a*)
+			uci set network.$ifmodemname.init_epsbearer=none
+			atinout_cfg_nl678
+		;;
+		*8087095a*) atinout_cfg_l850 ;;
 		*) uci set network.$ifmodemname.init_epsbearer=default ;;
 	esac
 }
@@ -99,7 +123,7 @@ configure_uci(){
 		PID=$(cat ${DEVICE}/idProduct)
 		VIDPID="${VID}${PID}"
 		[ -r ${RES} ] && {
-			[ "$(args $FAMILY)" -eq "1" ] && {
+			[ "$VID" -a "$PID" ] && {
 				FAMILY=$(awk -F [\;] '/'$VIDPID'/{print toupper($2)}' $RES)
 				logger -t "$NODE" "Found family $FAMILY modem: ${VID}:${PID}"
 			}
@@ -184,7 +208,7 @@ stuff(){
 }
 
 SLEEP=120
-# More arch need random times to initialise
+# More arch need random times to initialize
 [ -f /etc/openwrt_release ] && {
 	. /etc/openwrt_release
 	case $DISTRIB_TARGET in
