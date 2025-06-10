@@ -72,9 +72,9 @@ iface_modemmanager(){
 }
 
 iface_mm_bearer(){
-	# Huawei not support bearers
+	# NCM/ECM mode not support bearers
 	case $VIDPID in
-		12d11*) uci set network.$ifmodemname.init_epsbearer=none ;;
+		12d11*|2cb710a) uci set network.$ifmodemname.init_epsbearer=none ;;
 		*) uci set network.$ifmodemname.init_epsbearer=default ;;
 	esac
 }
