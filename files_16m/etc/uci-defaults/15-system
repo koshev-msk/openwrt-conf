@@ -40,9 +40,9 @@ restart_modem(){
 cat << EOF > /usr/share/pwr
 #!/bin/sh
 for s in 0 1; do
-        echo \${s} > /sys/class/gpio/${g}/value
+        echo \${s} > /sys/class/gpio/\${1}/value
         sleep 3
-        echo \${s} > /sys/class/gpio/${g}/value
+        echo \${s} > /sys/class/gpio/\${1}/value
 done
 
 [ -x /etc/init.d/smtools3 ] && {
