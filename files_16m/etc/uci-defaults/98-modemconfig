@@ -24,18 +24,19 @@ read_modem_list(){
 atinout_cfg_nl678(){
 cat << 'EOF' > /etc/atcommands.user
 Demo command "ATI";ATI
-NL678 - в NCM(23);AT+GTUSBMODE=23
-NL678 - в QMI(22);AT+GTUSBMODE=22
-NL678 - в QMI(17);AT+GTUSBMODE=17
-NL678 - перезагрузить;AT+CFUN=1,1
+NL678 - to NCM(23);AT+GTUSBMODE=23
+NL678 - to QMI(22);AT+GTUSBMODE=22
+NL678 - to QMI(17);AT+GTUSBMODE=17
+NL678 - reboot modem;AT+CFUN=1,1
 EOF
 }
 
 atinout_cfg_l850(){
 cat << 'EOF' > /etc/atcommands.user
 Demo command "ATI";ATI
-L850 - в MBIM;AT+GTUSBMODE=7
-L850 - перезагрузить;AT+CFUN=15
+L850 - to MBIM(7);AT+GTUSBMODE=7
+L850 - to NCM(0);AT+GTUSBMODE=0
+L850 - reboot modem;AT+CFUN=15
 EOF
 }
 
