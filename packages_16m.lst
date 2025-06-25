@@ -81,6 +81,8 @@ kmod-ipt-nfqueue
 kmod-ipt-conntrack-extra
 kmod-nf-ipt
 kmod-nf-ipt6
+kmod-ipt-raw
+kmod-ipt-raw6
 ip6tables-zz-legacy
 iptables-zz-legacy
 iptables-mod-nfqueue
