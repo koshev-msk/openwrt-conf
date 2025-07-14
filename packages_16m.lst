@@ -13,7 +13,6 @@ luci-app-commands
 #luci-app-telegrambot
 luci-app-ttl
 luci-app-ttyd
-#luci-app-mwan3
 # Network proto
 luci-proto-xmm
 #luci-proto-mbim
@@ -131,3 +130,7 @@ cfdisk
 kmod-fs-ext4
 kmod-fs-f2fs
 block-mount
+# usb utilites
+usbutils
+uhubctl
+

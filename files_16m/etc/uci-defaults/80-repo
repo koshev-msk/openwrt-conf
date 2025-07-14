@@ -2,6 +2,28 @@
 
 . /etc/openwrt_release
 
+board="$(cat /tmp/sysinfo/board_name)"
+
+case $board in
+	bananapi,bpi-rv2-nand)
+cat << EOF > /etc/opkg/distfeeds.conf
+src-gz openwrt_core https://openwrt.132lan.ru/releases/24.10.2/targets/siflower/sf21/packages
+src/gz openwrt_base https://downloads.openwrt.org/releases/24.10.2/packages/riscv64_riscv64/base
+src/gz openwrt_luci https://downloads.openwrt.org/releases/24.10.2/packages/riscv64_riscv64/luci
+src/gz openwrt_packages https://downloads.openwrt.org/releases/24.10.2/packages/riscv64_riscv64/packages
+src/gz openwrt_routing https://downloads.openwrt.org/releases/24.10.2/packages/riscv64_riscv64/routing
+src/gz openwrt_telephony https://downloads.openwrt.org/releases/24.10.2/packages/riscv64_riscv64/telephony
+EOF
+
+cat << EOF > /etc/opkg.conf
+dest root /
+dest ram /tmp
+lists_dir ext /var/opkg-lists
+option overlay_root /overlay
+EOF
+	;;
+esac
+
 echo "src/gz modemfeed http://openwrt.132lan.ru/packages/${DISTRIB_RELEASE%.*}/packages/${DISTRIB_ARCH}/modemfeed" >> /etc/opkg/customfeeds.conf
 
 FILE=/etc/opkg/keys/0c045b2ab5a62241
@@ -10,4 +32,5 @@ cat << 'EOF' > $FILE
 untrusted comment: public key 0c045b2ab5a62241
 RWQMBFsqtaYiQUBLJyFWcco98vKKEN9I1QRAonQBKTQu0yAzNOyPuN1s
 EOF
+
 
