@@ -32,9 +32,11 @@ chmod +x /etc/init.d/fixmodem
 restart_modem(){
         i=1
         for g in $@; do
-                uci add luci command
-                uci set luci.@command[-1].name="Restart Modem ${i} on GPIO: ${g}"
-                uci set luci.@command[-1].command="/usr/share/pwr ${g}"
+				! [ "$(uci show luci.@command[-1].command | grep ${g})" ] && {
+					uci add luci command
+					uci set luci.@command[-1].name="Restart Modem ${i} on GPIO: ${g}"
+					uci set luci.@command[-1].command="/usr/share/pwr ${g}"
+				}
                 i=$(($i+1))
         done
 cat << EOF > /usr/share/pwr
@@ -66,7 +68,7 @@ mwan3_conf(){
 			}
 		;;
 	esac
-
+! [ "$(grep ifmetric /etc/mwan3.user)" ] && {
 cat << 'EOF' >> /etc/mwan3.user
 JSON=$(ifstatus $INTERFACE)
 
@@ -84,6 +86,7 @@ case $ACTION in
 	disconnected) ifmetric $DEVICE $(($METRIC+1000)) ;;
 esac
 EOF
+}
 }
 
 MACHINE=$(awk '{print $2}' /sys/firmware/devicetree/base/model)
@@ -151,8 +154,12 @@ set system.@system[-1].zonename='Europe/Moscow'
 set system.@system[-1].timezone='MSK-3'
 set system.@system[-1].hostname=$MACHINE
 commit system
+EOF
+! [ $(uci show luci | grep ota.sh) ] && {
+uci batch << EOF
 add luci command
 set luci.@command[-1].name="Firmware update"
 set luci.@command[-1].command="/usr/share/ota.sh"
 commit luci
 EOF
+}

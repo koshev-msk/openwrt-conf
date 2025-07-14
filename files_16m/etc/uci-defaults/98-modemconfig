@@ -68,40 +68,48 @@ get_modem_param(){
 modeminfo_conf(){
 	case $ATPORT in
 		*ttyUSB*|*ttyACM*)
-			uci add modeminfo modeminfo
-                        uci set modeminfo.@modeminfo[-1].device=/dev/${ATPORT}
+			[ "$(uci -q get modeminfo.@modeminfo[-1].device)" != "/dev/${ATPORT}" ] && {
+				uci add modeminfo modeminfo
+				uci set modeminfo.@modeminfo[-1].device=/dev/${ATPORT}
+			}
 		;;
 		*cdc-wdm*)
-			uci add modeminfo modeminfo
-			uci set modeminfo.@modeminfo[-1].qmi_mode=1
-			uci set modeminfo.@modeminfo[-1].qmi_proxy=1
-			uci set modeminfo.@modeminfo[-1].device_qmi=/dev/${ATPORT}
+			[ "$(uci -q get modeminfo.@modeminfo[-1].device_qmi)" != "/dev/${ATPORT}" ] && {
+				uci add modeminfo modeminfo
+				uci set modeminfo.@modeminfo[-1].qmi_mode=1
+				uci set modeminfo.@modeminfo[-1].qmi_proxy=1
+				uci set modeminfo.@modeminfo[-1].device_qmi=/dev/${ATPORT}
+			}
 		;;
 	esac
 }
 # setting up network interface
 iface_modemmanager(){
-	uci set network.$ifmodemname=interface
-	uci set network.$ifmodemname.proto=modemmanager
-	uci set network.$ifmodemname.device=$DEVICE
-	uci set network.$ifmodemname.iptype=ipv4
-	uci set network.$ifmodemname.apn=$APN
-	uci set network.$ifmodemname.allowedauth=none
-	uci set network.$ifmodemname.signalrate='10'
-	uci set network.$ifmodemname.metric=${mn}00
+	! [ $(uci -q get network.$ifmodemname) ] && {
+		uci set network.$ifmodemname=interface
+		uci set network.$ifmodemname.proto=modemmanager
+		uci set network.$ifmodemname.device=$DEVICE
+		uci set network.$ifmodemname.iptype=ipv4
+		uci set network.$ifmodemname.apn=$APN
+		uci set network.$ifmodemname.allowedauth=none
+		uci set network.$ifmodemname.signalrate='10'
+		uci set network.$ifmodemname.metric=${mn}00
+	}
 }
 
 iface_mm_bearer(){
 	# NCM/ECM mode not support bearers
-	case $VIDPID in
-		12d11*) uci set network.$ifmodemname.init_epsbearer=none ;;
-		*2cb7010a*)
-			uci set network.$ifmodemname.init_epsbearer=none
-			atinout_cfg_nl678
-		;;
-		*8087095a*) atinout_cfg_l850 ;;
-		*) uci set network.$ifmodemname.init_epsbearer=default ;;
-	esac
+	! [ $(uci -q get network.$ifmodemname) ] && {
+		case $VIDPID in
+			12d11*) uci set network.$ifmodemname.init_epsbearer=none ;;
+			*2cb7010a*)
+				uci set network.$ifmodemname.init_epsbearer=none
+				atinout_cfg_nl678
+			;;
+			*8087095a*) atinout_cfg_l850 ;;
+			*) uci set network.$ifmodemname.init_epsbearer=default ;;
+		esac
+	}
 }
 # run system configurator
 configure_uci(){
