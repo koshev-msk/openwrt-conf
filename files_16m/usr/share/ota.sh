@@ -7,7 +7,7 @@ BOARD=$(jsonfilter -s "$(cat /etc/board.json)" -e '@["model"]["id"]')
 
 . /etc/openwrt_release
 
-URL_BASE=https://openwrt.132lan.ru/releases_cell/${DISTRIB_RELEASE}/targets/${DISTRIB_TARGET}
+URL_BASE=https://openwrt.132lan.ru/releases_cell/latest/targets/${DISTRIB_TARGET}
 
 
 rm -rf /tmp/profiles.json /tmp/firmware.bin
