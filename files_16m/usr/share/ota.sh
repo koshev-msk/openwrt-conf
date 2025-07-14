@@ -39,7 +39,7 @@ for b in $BASE_BOARD; do
 			DIGIT_ELEASE=$(echo ${DISTRIB_RELEASE} | awk '{gsub(/\./,""); print $0}')
 			FW_VER_LOCAL=${DIGIT_ELEASE}${VER_LOCAL}
 		else
-			echo ""Failed! Abort update"
+			echo "Failed! Abort update"
 			exit 0
 		fi
 		if [ -f /tmp/update.lock ]; then
@@ -47,7 +47,7 @@ for b in $BASE_BOARD; do
 			echo "from $URL_BASE"
 			wget $URL_BASE/$FILE -O /tmp/firmware.bin > /dev/null 2&>1
 			case $? in
-				0) continue ;;
+				0) echo "Download complete." ;;
 				*) echo "No updates for this board: $BOARD" && exit 0 ;;
 			esac
 			SHA256_DL=$(sha256sum /tmp/firmware.bin | awk '{print $1}')
