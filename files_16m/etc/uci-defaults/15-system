@@ -32,11 +32,11 @@ chmod +x /etc/init.d/fixmodem
 restart_modem(){
         i=1
         for g in $@; do
-				! [ "$(uci show luci.@command[-1].command | grep ${g})" ] && {
-					uci add luci command
-					uci set luci.@command[-1].name="Restart Modem ${i} on GPIO: ${g}"
-					uci set luci.@command[-1].command="/usr/share/pwr ${g}"
-				}
+		[ "$(uci get luci.@command[$(($i-1))].command)" != "${g})" ] && {
+			uci add luci command
+			uci set luci.@command[-1].name="Restart Modem ${i} on GPIO: ${g}"
+			uci set luci.@command[-1].command="/usr/share/pwr ${g}"
+		}
                 i=$(($i+1))
         done
 cat << EOF > /usr/share/pwr
