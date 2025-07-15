@@ -1,5 +1,7 @@
 #!/bin/sh
 
+[ -f /etc/.config.lock ] && exit 0
+
 board="$(cat /tmp/sysinfo/board_name)"
 
 remove_unused_init(){
@@ -32,12 +34,10 @@ chmod +x /etc/init.d/fixmodem
 restart_modem(){
         i=1
         for g in $@; do
-		[ "$(uci get luci.@command[$(($i-1))].command)" != "${g})" ] && {
-			uci add luci command
-			uci set luci.@command[-1].name="Restart Modem ${i} on GPIO: ${g}"
-			uci set luci.@command[-1].command="/usr/share/pwr ${g}"
-		}
-                i=$(($i+1))
+		uci add luci command
+		uci set luci.@command[-1].name="Restart Modem ${i} on GPIO: ${g}"
+		uci set luci.@command[-1].command="/usr/share/pwr ${g}"
+		i=$(($i+1))
         done
 cat << EOF > /usr/share/pwr
 #!/bin/sh
@@ -154,12 +154,8 @@ set system.@system[-1].zonename='Europe/Moscow'
 set system.@system[-1].timezone='MSK-3'
 set system.@system[-1].hostname=$MACHINE
 commit system
-EOF
-! [ $(uci show luci | grep ota.sh) ] && {
-uci batch << EOF
 add luci command
 set luci.@command[-1].name="Firmware update"
 set luci.@command[-1].command="/usr/share/ota.sh"
 commit luci
 EOF
-}

@@ -2,6 +2,8 @@
 #
 # mwan3 modems and colors led config
 
+[ -f /etc/.config.lock ] && exit 0
+
 mwan3_bled_1m(){
 
 cat << EOF >> /etc/mwan3.user
@@ -86,42 +88,40 @@ EOF
 # set mwan3.user config
 board="$(cat /tmp/sysinfo/board_name)"
 
-! [ "$(grep led /etc/mwan3.user)" ]  && {
+case $board in
+	beeline,smartbox-turbo-plus|\
+	beeline,smartbox-giga|\
+	beeline,smartbox-flash)
+		LED1="blue:wan"
+		LED2="green:status"
+		mwan3_bled_1m
+	;;
+	huasifei,ws1208v2-16m|\
+	huasifei,ws1208v2-32m)
+		LED="green:cellular"
+		mwan3_1led_1m
+	;;
+	huastlink,hc-g60)
+		LED1="blue:status"
+		LED2="green:status"
+		mwan3_bled_1m
+	;;
+	zbtlink,zbt-wg2107|\
+	zbtlink,zbt-cpe2801-32m)
+		LED1="green:wwan1"
+		LED2="green:wwan2"
+		mwan3_2led_2m
+	;;
+	zbtlink,zbt-z8102ax-nand|\
+	zbtlink,zbt-z8102ax-emmc)
+		LED1="blue:usb-0"
+		LED2="blue:usb-1"
+		mwan3_2led_2m
+	;;
+	zbtlink,zbt-wg1608-16m|\
+	zbtlink,zbt-wg1608-32m)
+		LED="green:wwan"
+		mwan3_1led_1m
+	;;
+esac
 
-	case $board in
-		beeline,smartbox-turbo-plus|\
-		beeline,smartbox-giga|\
-		beeline,smartbox-flash)
-			LED1="blue:wan"
-			LED2="green:status"
-			mwan3_bled_1m
-		;;
-		huasifei,ws1208v2-16m|\
-		huasifei,ws1208v2-32m)
-			LED="green:cellular"
-			mwan3_1led_1m
-		;;
-		huastlink,hc-g60)
-			LED1="blue:status"
-			LED2="green:status"
-			mwan3_bled_1m
-		;;
-		zbtlink,zbt-wg2107|\
-		zbtlink,zbt-cpe2801-32m)
-			LED1="green:wwan1"
-			LED2="green:wwan2"
-			mwan3_2led_2m
-		;;
-		zbtlink,zbt-z8102ax-nand|\
-		zbtlink,zbt-z8102ax-emmc)
-			LED1="blue:usb-0"
-			LED2="blue:usb-1"
-			mwan3_2led_2m
-		;;
-		zbtlink,zbt-wg1608-16m|\
-		zbtlink,zbt-wg1608-32m)
-			LED="green:wwan"
-			mwan3_1led_1m
-		;;
-	esac
-}

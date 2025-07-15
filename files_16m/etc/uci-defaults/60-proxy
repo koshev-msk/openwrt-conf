@@ -1,5 +1,7 @@
 #!/bin/sh
 
+[ -f /etc/.config.lock ] && exit 0
+
 CONFIG=/etc/3proxy.cfg
 LANIP="$(uci -q get network.lan.ipaddr)"
 LANIP6="$(uci -q get network.globals.ula_prefix | awk -F [\/] '{print $1"1"}')"

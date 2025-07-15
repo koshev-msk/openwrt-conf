@@ -1,0 +1,8 @@
+#!/bin/sh
+#
+LOCK="/etc/.config.lock"
+
+! [ -f $LOCK ] && {
+	echo "$LOCK" >> /etc/sysupgrade.conf
+	touch $LOCK
+}

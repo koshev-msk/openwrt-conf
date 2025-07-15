@@ -7,14 +7,19 @@ BOARD=$(jsonfilter -s "$(cat /etc/board.json)" -e '@["model"]["id"]')
 
 . /etc/openwrt_release
 
-URL_BASE=https://openwrt.132lan.ru/releases_cell/latest/targets/${DISTRIB_TARGET}
+URL_BASE=https://openwrt.132lan.ru/releases_cell/latest/
 
 
 rm -rf /tmp/profiles.json /tmp/firmware.bin
 if [ ! -f /tmp/update.lock ]; then
-	echo "Check updates."
+	echo -e "Check updates.\n"
 fi
-wget ${URL_BASE}/profiles.json -O /tmp/profiles.json > /dev/null 2&>1
+
+! [ -f /tmp/profiles.json ] && {
+	wget ${URL_BASE}/targets/${DISTRIB_TARGET}/profiles.json -O /tmp/profiles.json > /dev/null 2&>1
+	wget ${URL_BASE}/changelog.txt -O /tmp/changelog.txt > /dev/null 2&>1
+}
+
 case $? in
 	0) continue ;;
 	*) echo "No updates for this board: $BOARD" && exit 0;;
@@ -45,7 +50,7 @@ for b in $BASE_BOARD; do
 		if [ -f /tmp/update.lock ]; then
 			echo "Download firmware $FILE"
 			echo "from $URL_BASE"
-			wget $URL_BASE/$FILE -O /tmp/firmware.bin > /dev/null 2&>1
+			wget $URL_BASE/targets/${DISTRIB_TARGET}/$FILE -O /tmp/firmware.bin > /dev/null 2&>1
 			case $? in
 				0) echo "Download complete." ;;
 				*) echo "No updates for this board: $BOARD" && exit 0 ;;
@@ -65,16 +70,21 @@ for b in $BASE_BOARD; do
 				sleep 5 && sysupgrade /tmp/firmware.bin &
 			else
 				echo "Failed! Abort update"
-				rm -f /tmp/update.lock
+				rm -f /tmp/update.lock /tmp/changelog.txt
 			fi
 		else
 			if [ $FW_REV_EXT -gt $FW_VER_LOCAL ]; then
 				echo "New firmware upgrade release!"
-				echo "*** $FILE ***"
-				echo "Please run again scrit to update!"
+				echo -e "*** $FILE ***\n"
+				[ -r /tmp/changelog.txt ] && {
+					echo -e "RELEASE NOTES:\n"
+					echo "$(cat /tmp/changelog.txt)"
+				}
+				echo ""
+				echo "Please run again script to update!"
 				touch /tmp/update.lock
 			else
-				echo "No update aviaible!"
+				echo "No update aviable!"
 			fi
 		fi
 	fi
