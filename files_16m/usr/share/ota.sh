@@ -20,6 +20,11 @@
 #  e.g
 #  FW_REV="202507-rev01"
 
+# URL Update server
+#URL_BASE=https://example.com/latest
+URL_BASE=https://openwrt.132lan.ru/releases_cell/latest
+
+
 # Get OpenWrt Release info
 [ -f /etc/openwrt_release ] && {
 	. /etc/openwrt_release
@@ -34,11 +39,7 @@
 # Get board info
 BOARD=$(jsonfilter -s "$(cat /etc/board.json)" -e '@["model"]["id"]')
 
-# URL Update server
-#URL_BASE=https://example.com/latest
-URL_BASE=https://openwrt.132lan.ru/releases_cell/latest
-
-
+# Remove update files
 remove_files(){
 	for f in firmware.bin changelog.txt; do
 		[ -f /tmp/${f} ] && {
@@ -55,6 +56,11 @@ fi
 ! [ -f /tmp/profiles.json ] && {
 	wget ${URL_BASE}/targets/${DISTRIB_TARGET}/profiles.json -O /tmp/profiles.json > /dev/null 2&>1
 	PROFILE=$?
+}
+
+[ "$PROFILE" -ne 0 ] && {
+	echo "Updates not available from this server."
+	exit 0
 }
 
 # Get changelog

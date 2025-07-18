@@ -1,5 +1,7 @@
 #!/bin/sh
 
+[ -f /etc/.config.lock ] && exit 0
+
 CONFIG_AZP=/etc/openvpn/azp.ovpn
 
 uci batch << EOF

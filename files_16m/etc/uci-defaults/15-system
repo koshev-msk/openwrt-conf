@@ -92,6 +92,10 @@ EOF
 MACHINE=$(awk '{print $2}' /sys/firmware/devicetree/base/model)
 
 case $board in
+	huastlink,hc-g60)
+		restart_modem modem
+		mwan3_conf 1m
+	;;
 	zbtlink,zbt-z8102ax-nand|\
 	zbtlink,zbt-z8102ax-emmc)
 		restart_modem 5g1 5g2

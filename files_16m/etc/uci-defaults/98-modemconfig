@@ -72,6 +72,9 @@ modeminfo_conf(){
 		*ttyUSB*|*ttyACM*)
 			uci add modeminfo modeminfo
 			uci set modeminfo.@modeminfo[-1].device=/dev/${ATPORT}
+			case $FAMILY in
+				*DELL*) uci set modeminfo.@modeminfo[-1].mmcli_name=1 ;;
+			esac
 		;;
 		*cdc-wdm*)
 			uci add modeminfo modeminfo
@@ -186,7 +189,7 @@ configure_uci(){
 			modeminfo_conf
 		}
 		mn=$(($mn+1))
-		unset ATPORT
+		unset ATPORT FAMILY
 	done
 	[ "$L850" = "0" ] && {
 		[ -x /etc/init.d/fixmodem ] && {
