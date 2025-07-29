@@ -1,21 +1,28 @@
 # Put your custom commands here that should be executed once
 # the system init finished. By default this file does nothing.
 
-# MeIG SLM828 Detect
-#echo '2dee 4d22 ff 2cb7 0104' > /sys/bus/usb-serial/drivers/option1/new_id
-#echo '2dee 4d22 ff 2cb7 0104' > /sys/bus/usb/drivers/qmi_wwan/new_id
+# MPTCP enable client side
+# uncomment and edit next line in /etc/3proxy.cfg
+##parent 1000 socks5+ ${SERVER_IP} ${SERVER_PORT}
+# e.g
+# parent 1000 socks5+ 10.0.0.1 1090
+#
+# Run 3proxy daemon in mptcp mode
+# mptcpize run 3proxy /etc/3proxy.cfg
+# 
+# Add redirect firewall rule to transparent proxy 3proxy
+# iptables -t nat -I PREROUTING -i br-lan -p tcp -m tcp ! -d $(uci -q get network.lan.ipaddr) \
+#	-j DNAT --to-destination $(uci -q get network.lan.ipaddr):3128
+# Optional: disable NAT in firewall WAN zone
 
-# GosunCN Welink GM510 Detect
-#echo '0305 1415 ff' > /sys/bus/usb-serial/drivers/option1/new_id
 
-# ThinkWill ML7820+ Detect
-#echo '19d2 0532 ff' > /sys/bus/usb-serial/drivers/option1/new_id
-
-# Yuge CLM920 ASR Chipt Detect
-#echo '1286 4e3c ff' > /sys/bus/usb-serial/drivers/option1/new_id
-
-# Fibocom NL678 GTUSBMODE 22 (modem + AT + RMNET)
-#echo '2cb7 0109 ff 12d1 1406' > /sys/bus/usb-serial/drivers/option1/new_id
-#echo '2cb7 0109 ff 1bc7 1261' > /sys/bus/usb/drivers/qmi_wwan/new_id
+# MPTCP enable server side
+# edit config proxy file: /etc/3proxy.cfg
+# comment lines #socks5 -64 ...
+# add line
+# socks5 -64 -i0.0.0.0 -p1090 -n
+#
+# Run parent proxy 3proxy in mptcpmode
+# mptcpize run 3proxy /etc/3proxy.cfg
 
 exit 0

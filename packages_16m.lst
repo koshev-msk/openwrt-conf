@@ -133,4 +133,8 @@ block-mount
 # usb utilites
 usbutils
 uhubctl
+# MPTCP
+kmod-inet-mptcp-diag
+mptcpd
+mptcpize
 
