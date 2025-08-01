@@ -7,7 +7,7 @@ cat << 'EOF' > /etc/mptcpd/mptcpd.conf
 log=syslog
 plugin-dir=/usr/lib/mptcpd
 path-manager=addr_adv
-addr-flags=subflow,fullmesh,backup
+addr-flags=subflow,fullmesh
 notify-flags=existing,skip_link_local,skip_loopback,check_route
 load-plugins=addr_adv,sspi
 EOF

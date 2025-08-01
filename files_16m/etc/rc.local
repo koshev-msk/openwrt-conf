@@ -1,18 +1,33 @@
 # Put your custom commands here that should be executed once
 # the system init finished. By default this file does nothing.
 
+
+
+### DO NOT UNCOMMENT! ####
 # MPTCP enable client side
+# Run 3proxy in MPTCP mode
+# add "option mptcp '1'" in /etc/config/3proxy
+#
+# config 3proxy
+#	option config '/etc/3proxy.cfg
+#	option mptcp '1'
+#
 # uncomment and edit next line in /etc/3proxy.cfg
-##parent 1000 socks5+ ${SERVER_IP} ${SERVER_PORT}
+# #parent 1000 socks5+ ${SERVER_IP} ${SERVER_PORT}
 # e.g
 # parent 1000 socks5+ 10.0.0.1 1090
 #
-# Run 3proxy daemon in mptcp mode
-# mptcpize run 3proxy /etc/3proxy.cfg
-# 
 # Add redirect firewall rule to transparent proxy 3proxy
-# iptables -t nat -I PREROUTING -i br-lan -p tcp -m tcp ! -d $(uci -q get network.lan.ipaddr) \
-#	-j DNAT --to-destination $(uci -q get network.lan.ipaddr):3128
+# in /etc/config/ttl
+#
+# config ttl
+#        option iface 'lan'
+#        option method 'proxy'
+#        option advanced '0'
+# In LuCI Add rule in Newtowk -> Firewall -> TTL
+# 	Set interface:	lan
+#	Method:		proxy
+# Save & Apply it.
 # Optional: disable NAT in firewall WAN zone
 
 
@@ -22,7 +37,8 @@
 # add line
 # socks5 -64 -i0.0.0.0 -p1090 -n
 #
-# Run parent proxy 3proxy in mptcpmode
-# mptcpize run 3proxy /etc/3proxy.cfg
+# Open port 1090 in firewall
+# Run parent proxy 3proxy in mptcp mode
+# add "option mptcp '1'" in /etc/config/3proxy
 
 exit 0
