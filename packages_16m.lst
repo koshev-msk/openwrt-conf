@@ -13,6 +13,7 @@ luci-app-commands
 #luci-app-telegrambot
 luci-app-ttl
 luci-app-ttyd
+luci-app-amneziawg
 # Network proto
 luci-proto-xmm
 #luci-proto-mbim
@@ -137,4 +138,6 @@ uhubctl
 kmod-inet-mptcp-diag
 mptcpd
 mptcpize
-
+# NAT64 and DNS64
+kmod-nat64
+totd
