@@ -144,6 +144,10 @@ case $board in
 		uci set system.led_wifi_led.dev='phy0-ap0'
 		mwan3_conf 1m
 	;;
+	mikrotik,mikrotik_routerboard-m11g|\
+	vertell,m2-router)
+		continue
+	;;
 	*)
 		mwan3_conf 1m
 	;;
