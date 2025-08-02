@@ -85,7 +85,6 @@ board_stuff(){
 	for f in $FILES; do
 		case $f in
 			*sysupgrade*) break ;;
-			*) echo "No update found!" && exit 0 ;;
 		esac
 		n=$(($n+1))
 	done
