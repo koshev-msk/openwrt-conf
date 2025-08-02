@@ -41,7 +41,7 @@ config totd
         list forwarder '127.0.0.1#53'
         list prefix '64:ff9b::'
 
-# You must run uci-default script in /rom/etc/uci-defaults/85-nat64
+# You must run uci-default script in /rom/etc/uci-defaults/20-nat64
 # for automated setup interfaces routes and firewall zone
 # NOTE! DNS port dnsmasq and totd must be configured manually!
 # Network interface and route disabled by default!
