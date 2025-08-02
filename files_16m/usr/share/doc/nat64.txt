@@ -44,7 +44,7 @@ config totd
 # You must run uci-default script in /rom/etc/uci-defaults/20-nat64
 # for automated setup interfaces routes and firewall zone
 # NOTE! DNS port dnsmasq and totd must be configured manually!
-# Network interface and route disabled by default!
+# Network interface, route and totd disabled by default!
 
 
 # Restart services or device

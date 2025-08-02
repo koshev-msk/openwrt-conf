@@ -106,6 +106,8 @@ kmod-l2tp-ip
 kmod-pppol2tp
 kmod-pptp
 kmod-nf-nathelper-extra
+# AmneziaWG VPN kmod
+kmod-amneziawg
 # wireless
 #wpad-basic-openssl
 # PPP
@@ -138,6 +140,8 @@ uhubctl
 kmod-inet-mptcp-diag
 mptcpd
 mptcpize
+ip-full
 # NAT64 and DNS64
 kmod-nat64
 totd
+natflow-boot

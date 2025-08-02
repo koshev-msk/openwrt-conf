@@ -80,10 +80,22 @@ BASE_BOARD=$(jsonfilter -s "$(cat /tmp/profiles.json)" -e '@["profiles"][*]["sup
 # Get available board info
 board_stuff(){
 	jsonfilter -s "$(cat /tmp/profiles.json)" \
-		-e FILE="$['profiles']['$FW_BOARD']['images'][-1]['name']" \
-		-e SHA256="$['profiles']['$FW_BOARD']['images'][-1]['sha256']"
+		-e FILES="$['profiles']['$FW_BOARD']['images'][*]['name']" 
+	n=0
+	for f in $FILES; do
+		case $f in
+			*sysupgrade*) break ;;
+			*) echo "No update found!" && exit 0 ;;
+		esac
+		n=$(($n+1))
+	done
+	jsonfilter -s "$(cat /tmp/profiles.json)" \
+		-e FILE="$['profiles']['$FW_BOARD']['images'][$n]['name']" \
+		-e SHA256="$['profiles']['$FW_BOARD']['images'][$n]['sha256']"
 }
 
+#sha256check(){
+#}
 
 # stuff
 for b in $BASE_BOARD; do
