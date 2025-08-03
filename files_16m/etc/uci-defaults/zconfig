@@ -6,3 +6,5 @@ LOCK="/etc/.config.lock"
 	echo "$LOCK" >> /etc/sysupgrade.conf
 	touch $LOCK
 }
+
+exit 0

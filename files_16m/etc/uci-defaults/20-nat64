@@ -1,11 +1,15 @@
 #!/bin/sh
 
+MODULE=/etc/modules.d/33-nat64
+IP4PREFIX=172.16.250.0
+IP6PREFIX=64:ff9b::
+
 cat << EOF > $MODULE
 nat64 ipv4_prefix=${IP4PREFIX}/24 ipv6_prefix=${IP6PREFIX}/96
 EOF
 
 rmmod nat64
-modprobe nat64
+insmod $(cat $MODULE)
 
 [ -f /etc/.config.lock ] && exit 0
 
