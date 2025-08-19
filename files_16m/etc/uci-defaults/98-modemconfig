@@ -84,6 +84,12 @@ modeminfo_conf(){
 		;;
 	esac
 }
+
+smstools3_conf(){
+	uci set smstools3.$ifmodemname=modem
+	uci set smstools3.$ifmodemname.device=/dev/${SMSPORT}
+	uci set smstools3.$ifmodemname.enable=1
+}
 # setting up network interface
 iface_modemmanager(){
 	uci set network.$ifmodemname=interface
@@ -116,6 +122,11 @@ configure_uci(){
 	uci set modeminfo.@general[0]=general
 	uci set modeminfo.@general[0].index='1'
 	uci set modeminfo.@general[0].decimail='1'
+	# general config smstools3
+        uci set smstools3.@sms[0]=sms
+        uci set smstools3.@sms[0].decode_utf='1'
+        uci set smstools3.@sms[0].storage='temporary'
+        uci set smstools3.@sms[0].loglevel='5'
 	NOT_SUPPORT_MM=1
 	L850=0
 	mn=1
@@ -187,6 +198,18 @@ configure_uci(){
 		# set modeminfo
 		! [ "$ATPORT" = "" ] && {
 			modeminfo_conf
+			case $ATPORT in
+				ttyUSB*)
+					SMSPORT=${ATPORT%?}$((${ATPORT: -1}+1))
+					smstools3_conf
+				;;
+				ttyACM*)
+					SMSPORT=${ATPORT%?}$((${ATPORT: -1}+2))
+					smstools3_conf
+					uci set smstools3.$ifmodemname.net_check='0'
+					uci set smstools3.$ifmodemname.sig_check='1'
+				;;
+			esac
 		}
 		mn=$(($mn+1))
 		unset ATPORT FAMILY
@@ -204,13 +227,14 @@ configure_uci(){
 	} || {
 		logger -t "$NODE" "Modem interface(s) setup complete."
 	}
-	uci commit
-	reload_config
 }
 
 stuff(){
 	standby_modems
 	configure_uci
+	uci commit
+	reload_config
+	/etc/init.d/luci-sms start
 }
 
 SLEEP=120
