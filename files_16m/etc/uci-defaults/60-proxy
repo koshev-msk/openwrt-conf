@@ -17,9 +17,9 @@ auth iponly
 allow *
 # parent 1000 socks5+ \${SERVER_IP} \${SERVER_PORT}
 socks -64 -i127.0.0.1 -p1090 -n
-socks -64 -i::1 -p1090 -n
+#socks -64 -i::1 -p1090 -n
 transparent
-tcppm -i${LANIP} 3128 127.0.0.1 1090
-tcppm -i${LANIP6} 3128 ::1 1090
+tcppm -osTCP_NODELAY -ocTCP_NODELAY -s0 -i${LANIP} 3128 127.0.0.1 1090
+#tcppm -osTCP_NODELAY -ocTCP_NODELAY -s0 -i${LANIP6} 3128 ::1 1090
 notransparent
 EOF
