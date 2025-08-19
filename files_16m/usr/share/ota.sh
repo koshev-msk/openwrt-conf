@@ -55,10 +55,9 @@ fi
 # Get aviable profiles
 ! [ -f /tmp/profiles.json ] && {
 	wget ${URL_BASE}/targets/${DISTRIB_TARGET}/profiles.json -O /tmp/profiles.json > /dev/null 2&>1
-	PROFILE=$?
 }
 
-[ "$PROFILE" -ne 0 ] && {
+! [ -f /tmp/profiles.json ] && {
 	echo "Updates not available from this server."
 	exit 0
 }
