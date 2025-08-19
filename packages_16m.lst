@@ -22,7 +22,7 @@ luci-proto-wireguard
 #luci-proto-vpnc
 #luci-proto-openconnect
 #luci-proto-3g
-luci-proto-ncm
+#luci-proto-ncm
 luci-proto-modemmanager
 # localize RU
 #luci-i18n-base-ru

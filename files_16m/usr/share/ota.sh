@@ -79,18 +79,10 @@ BASE_BOARD=$(jsonfilter -s "$(cat /tmp/profiles.json)" -e '@["profiles"][*]["sup
 
 # Get available board info
 board_stuff(){
-	jsonfilter -s "$(cat /tmp/profiles.json)" \
-		-e FILES="$['profiles']['$FW_BOARD']['images'][*]['name']" 
-	n=0
-	for f in $FILES; do
-		case $f in
-			*sysupgrade*) break ;;
-		esac
-		n=$(($n+1))
-	done
-	jsonfilter -s "$(cat /tmp/profiles.json)" \
-		-e FILE="$['profiles']['$FW_BOARD']['images'][$n]['name']" \
-		-e SHA256="$['profiles']['$FW_BOARD']['images'][$n]['sha256']"
+        IMAGES=$(jsonfilter -s "$(cat /tmp/profiles.json)" -e "@['profiles']['$FW_BOARD']['images'][*]" | grep sysupgrade)
+        echo $IMAGES | jsonfilter \
+                -e FILE="$['name']" \
+                -e SHA256="$['sha256']"
 }
 
 #sha256check(){
