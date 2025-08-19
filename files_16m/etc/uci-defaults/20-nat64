@@ -28,7 +28,7 @@ set network.@route[-1].target=${IP4PREFIX}/24
 set network.@route[-1].disabled='1'
 add network route6
 set network.@route6[-1].interface='nat64'
-set network.@route6[-1].target=${IP6PREFIX}/24
+set network.@route6[-1].target=${IP6PREFIX}/96
 set network.@route6[-1].disabled='1'
 set totd.@totd[0].forwarder='127.0.0.1#5353'
 set totd.@totd[0].prefix='64:ff9b::'
