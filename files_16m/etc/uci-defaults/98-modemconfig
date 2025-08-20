@@ -145,6 +145,10 @@ iface_mm_bearer(){
 configure_uci(){
 	# modems in system
 	ARGSLENMODEM=$(args $MODEMS)
+	[ $ARGSLENMODEM -eq 0 ] && {
+		logger -t "$NODE" "WARNING: modems not found in system"
+		exit 0
+	}
 	# general config modeminfo
 	uci set modeminfo.@general[0]=general
 	uci set modeminfo.@general[0].index='1'

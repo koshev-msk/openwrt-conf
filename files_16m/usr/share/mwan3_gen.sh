@@ -6,6 +6,11 @@ if [ $# -lt 1 ]; then
     exit 1
 fi
 
+if [ $# -eq 1 ]; then
+    echo "Error: interaces must be two or more." >&2
+    exit 1
+fi
+
 # awk config generator
 echo "$@" | awk '
 {
@@ -67,21 +72,23 @@ echo "$@" | awk '
     }
 
     # Gen members 50% primary iface
-    for (i = 1; i <= n; i++) {
-        print "config member '\''" $i "_member_half'\''"
-        print "    option interface '\''" $i "'\''"
-        print "    option metric '\''1'\''"
-        print "    option weight '\''5'\''"  # Primary 50%
-        print ""
+    if (n > 2) {
+        for (i = 1; i <= n; i++) {
+            print "config member '\''" $i "_member_half'\''"
+            print "    option interface '\''" $i "'\''"
+            print "    option metric '\''1'\''"
+            print "    option weight '\''5'\''"  # Primary 50%
+            print ""
 
-        for (j = 1; j <= n; j++) {
-            if (j != i) {
-                print "config member '\''" $j "_member_half_" i "'\''"
-                print "    option interface '\''" $j "'\''"
-                print "    option metric '\''1'\''"
-                other_weight = int(5 / (n - 1))  # All to 50%
-                print "    option weight '\''" other_weight "'\''"
-                print ""
+            for (j = 1; j <= n; j++) {
+                if (j != i) {
+                    print "config member '\''" $j "_member_half_" i "'\''"
+                    print "    option interface '\''" $j "'\''"
+                    print "    option metric '\''1'\''"
+                    other_weight = int(5 / (n - 1))  # All to 50%
+                    print "    option weight '\''" other_weight "'\''"
+                    print ""
+                }
             }
         }
     }
@@ -106,16 +113,18 @@ echo "$@" | awk '
         print ""
     }
 
-    for (i = 1; i <= n; i++) {
-        # 50% traffic primary iface
-        print "config policy '\''half_" $i "'\''"
-        print "    list use_member '\''" $i "_member_half'\''"
-        for (j = 1; j <= n; j++) {
-            if (j != i) {
-                print "    list use_member '\''" $j "_member_half_" i "'\''"
+    if (n > 2) {
+        for (i = 1; i <= n; i++) {
+            # 50% traffic primary iface
+            print "config policy '\''half_" $i "'\''"
+            print "    list use_member '\''" $i "_member_half'\''"
+            for (j = 1; j <= n; j++) {
+                if (j != i) {
+                    print "    list use_member '\''" $j "_member_half_" i "'\''"
+                }
             }
+            print ""
         }
-        print ""
     }
 
     # all balanced mode
