@@ -134,21 +134,21 @@ echo "$@" | awk '
     }
     print ""
 
-    # LAN rule ( future use )
-    #print "config rule '\''lan'\''"
-    #print "    option family '\''ipv4'\''"
-    #print "    option proto '\''all'\''"
-    #print "    option sticky '\''0'\''"
-    #print "    option src_ip '\''192.168.1.0/24'\''"
-    #print "    option use_policy '\''balanced'\''"
-    #print ""
-
-    # Default rule
-    print "config rule '\''default_rule'\''"
+    # LAN rule
+    print "config rule '\''lan'\''"
     print "    option family '\''ipv4'\''"
     print "    option proto '\''all'\''"
     print "    option sticky '\''0'\''"
+    print "    option src_ip '\''192.168.1.0/24'\''"
     print "    option use_policy '\''balanced'\''"
     print ""
+
+    # Default rule ( future use )
+    #print "config rule '\''default_rule'\''"
+    #print "    option family '\''ipv4'\''"
+    #print "    option proto '\''all'\''"
+    #print "    option sticky '\''0'\''"
+    #print "    option use_policy '\''balanced'\''"
+    #print ""
 }
 '
