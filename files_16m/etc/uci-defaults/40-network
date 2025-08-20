@@ -11,6 +11,7 @@ set network.azp=interface
 set network.azp.device='azp0'
 set network.azp.proto='none'
 set network.lan.ip6assign='64'
+set network.wan.metric='10'
 set network.globals.ula_prefix=$ula
 commit network
 EOF

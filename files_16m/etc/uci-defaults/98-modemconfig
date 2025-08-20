@@ -9,6 +9,8 @@
 
 [ -x /usr/bin/mmcli ] || exit 0
 
+board="$(cat /tmp/sysinfo/board_name)"
+
 RES=/usr/share/modeminfo/modem.list
 NODE=MODEMCONFIG
 
@@ -21,6 +23,27 @@ read_modem_list(){
 	eval $(jsonfilter -s "$(mmcli -L -J)" -e "MODEMS=$['modem-list'][*]")
 }
 
+
+mwan3_user_conf(){
+cat << 'EOF' >> /etc/mwan3.user
+JSON=$(ifstatus $INTERFACE)
+
+get_vars(){
+        jsonfilter -s "$JSON" \
+                -e "METRIC=@['metric']" \
+                -e "GW=@['route'][*]['nexthop']"
+}
+
+eval $(get_vars)
+
+
+case $ACTION in
+        connected) ifmetric $DEVICE $METRIC ;;
+        disconnected) ifmetric $DEVICE $(($METRIC+1000)) ;;
+esac
+}
+EOF
+}
 
 # atinout cmd
 atinout_cfg_nl678(){
@@ -109,8 +132,12 @@ iface_mm_bearer(){
 		*2cb7010a*)
 			uci set network.$ifmodemname.init_epsbearer=none
 			atinout_cfg_nl678
+			logger -t "$NODE" "WARNING: modem in NCM mode, but will work QMI. Please setup modem mode AT-command"
 		;;
-		*8087095a*) atinout_cfg_l850 ;;
+		*8087095a*)
+			atinout_cfg_l850
+			logger -t "$NODE" "WARNING: modem in XMM mode, check modem model, if model L850 please setup modem mode AT-command"
+		;;
 		*) uci set network.$ifmodemname.init_epsbearer=default ;;
 	esac
 }
@@ -212,6 +239,7 @@ configure_uci(){
 			esac
 		}
 		mn=$(($mn+1))
+		MWAN_IFACES="$MWAN_IFACES $ifmodemname"
 		unset ATPORT FAMILY
 	done
 	[ "$L850" = "0" ] && {
@@ -225,6 +253,12 @@ configure_uci(){
 			/etc/init.d/modemmanager ${a}
 		done
 	} || {
+		[ -x /usr/sbin/mwan3 -a -x /usr/share/mwan3_gen.sh ] && {
+			logger -t "$NODE" "Generate config for MWAN3."
+			/usr/share/mwan3_gen.sh wan ${MWAN_IFACES:=modem} > /etc/config/mwan3
+			mwan3_user_conf
+			/etc/init.d/mwan3 restart
+		}
 		logger -t "$NODE" "Modem interface(s) setup complete."
 	}
 }
@@ -247,3 +281,4 @@ SLEEP=120
 }
 
 sleep $SLEEP && stuff &
+
