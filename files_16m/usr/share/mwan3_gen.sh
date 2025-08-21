@@ -160,7 +160,7 @@ echo "$@" | awk -v lan=${NETWORK}/${PREFIX} '
     print "    option family '\''ipv4'\''"
     print "    option proto '\''all'\''"
     print "    option sticky '\''0'\''"
-    print "    option src_ip '\'' "lan" '\''"
+    print "    option src_ip '\''"lan"'\''"
     print "    option use_policy '\''balanced'\''"
     print ""
 
