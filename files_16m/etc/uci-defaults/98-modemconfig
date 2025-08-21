@@ -26,6 +26,8 @@ read_modem_list(){
 
 mwan3_user_conf(){
 cat << 'EOF' >> /etc/mwan3.user
+
+# Set metric interface via state
 JSON=$(ifstatus $INTERFACE)
 
 get_vars(){
@@ -41,7 +43,6 @@ case $ACTION in
         connected) ifmetric $DEVICE $METRIC ;;
         disconnected) ifmetric $DEVICE $(($METRIC+1000)) ;;
 esac
-}
 EOF
 }
 

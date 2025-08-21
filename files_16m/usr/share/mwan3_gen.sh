@@ -21,6 +21,7 @@ echo "$@" | awk '
     print ""
 
     n = NF
+	BASE_WEIGHT = 1000
     # iface section generate
     for (i = 1; i <= n; i++) {
         print "config interface '\''" $i "'\''"
@@ -47,45 +48,54 @@ echo "$@" | awk '
         print "config member '\''" $i "_member_balanced'\''"
         print "    option interface '\''" $i "'\''"
         print "    option metric '\''1'\''"
-        print "    option weight '\''1'\''"
+        print "    option weight '\''" BASE_WEIGHT "'\''"
         print ""
     }
 
     # Gen members 70% primary iface
     for (i = 1; i <= n; i++) {
+        primary_weight = int(BASE_WEIGHT * 0.7)
+        other_weight = int(BASE_WEIGHT * 0.3 / (n - 1))
+        
+		# Primary iface 70%
         print "config member '\''" $i "_member_primary'\''"
         print "    option interface '\''" $i "'\''"
         print "    option metric '\''1'\''"
-        print "    option weight '\''7'\''"  # Primary 70%
+        print "    option weight '\''" primary_weight "'\''"
         print ""
-
+        
+		# Other all to 30%
         for (j = 1; j <= n; j++) {
             if (j != i) {
                 print "config member '\''" $j "_member_primary_" i "'\''"
                 print "    option interface '\''" $j "'\''"
                 print "    option metric '\''1'\''"
-                other_weight = int(3 / (n - 1))  # All to 30%
                 print "    option weight '\''" other_weight "'\''"
                 print ""
             }
         }
     }
 
+
     # Gen members 50% primary iface
     if (n > 2) {
         for (i = 1; i <= n; i++) {
+            half_weight = int(BASE_WEIGHT * 0.5)
+            other_weight = int(BASE_WEIGHT * 0.5 / (n - 1))
+            
+			# Primary iface 50%
             print "config member '\''" $i "_member_half'\''"
             print "    option interface '\''" $i "'\''"
             print "    option metric '\''1'\''"
-            print "    option weight '\''5'\''"  # Primary 50%
+            print "    option weight '\''" half_weight "'\''"
             print ""
-
+            
+			# All to 50%
             for (j = 1; j <= n; j++) {
                 if (j != i) {
                     print "config member '\''" $j "_member_half_" i "'\''"
                     print "    option interface '\''" $j "'\''"
                     print "    option metric '\''1'\''"
-                    other_weight = int(5 / (n - 1))  # All to 50%
                     print "    option weight '\''" other_weight "'\''"
                     print ""
                 }
