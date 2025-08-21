@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# simple mwan3 config generator
+# copyright by koshev-msk 2025
+
 # check args
 if [ $# -lt 1 ]; then
     echo "Usage: $0 <interface1> [interface2] ..." >&2
@@ -11,8 +14,16 @@ if [ $# -eq 1 ]; then
     exit 1
 fi
 
+# get network address from LAN
+eval $(ipcalc.sh $(uci -q get network.lan.ipaddr) $(uci -q get network.lan.netmask))
+
+if ! [ -n ${NETWORK} -o -n ${PREFIX} ]; then
+    echo "Error: LAN interface doest not address"
+    exit 1
+fi
+
 # awk config generator
-echo "$@" | awk '
+echo "$@" | awk -v lan=${NETWORK}/${PREFIX} '
 {
 
 
@@ -21,7 +32,7 @@ echo "$@" | awk '
     print ""
 
     n = NF
-	BASE_WEIGHT = 1000
+    BASE_WEIGHT = 1000
     # iface section generate
     for (i = 1; i <= n; i++) {
         print "config interface '\''" $i "'\''"
@@ -56,15 +67,15 @@ echo "$@" | awk '
     for (i = 1; i <= n; i++) {
         primary_weight = int(BASE_WEIGHT * 0.7)
         other_weight = int(BASE_WEIGHT * 0.3 / (n - 1))
-        
-		# Primary iface 70%
+
+        # Primary iface 70%
         print "config member '\''" $i "_member_primary'\''"
         print "    option interface '\''" $i "'\''"
         print "    option metric '\''1'\''"
         print "    option weight '\''" primary_weight "'\''"
         print ""
-        
-		# Other all to 30%
+
+        # Other all to 30%
         for (j = 1; j <= n; j++) {
             if (j != i) {
                 print "config member '\''" $j "_member_primary_" i "'\''"
@@ -82,15 +93,15 @@ echo "$@" | awk '
         for (i = 1; i <= n; i++) {
             half_weight = int(BASE_WEIGHT * 0.5)
             other_weight = int(BASE_WEIGHT * 0.5 / (n - 1))
-            
-			# Primary iface 50%
+
+           # Primary iface 50%
             print "config member '\''" $i "_member_half'\''"
             print "    option interface '\''" $i "'\''"
             print "    option metric '\''1'\''"
             print "    option weight '\''" half_weight "'\''"
             print ""
-            
-			# All to 50%
+
+            # All to 50%
             for (j = 1; j <= n; j++) {
                 if (j != i) {
                     print "config member '\''" $j "_member_half_" i "'\''"
@@ -149,7 +160,7 @@ echo "$@" | awk '
     print "    option family '\''ipv4'\''"
     print "    option proto '\''all'\''"
     print "    option sticky '\''0'\''"
-    print "    option src_ip '\''192.168.1.0/24'\''"
+    print "    option src_ip '\'' "lan" '\''"
     print "    option use_policy '\''balanced'\''"
     print ""
 
