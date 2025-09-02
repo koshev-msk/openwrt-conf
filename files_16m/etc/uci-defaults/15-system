@@ -13,6 +13,7 @@ remove_unused_init(){
 
 
 fixmodems(){
+GPIOS_STATES_MODEM=${GPIOS_STATES_MODEM:="0 1"}
 cat << EOF > /etc/init.d/fixmodem
 #!/bin/sh /etc/rc.common
 #
@@ -20,9 +21,9 @@ START=50
 
 start(){
 	for g in $@; do
-		echo 0 > /sys/class/gpio/\${g}/value
+		echo ${GPIOS_STATES_MODEM%1} > /sys/class/gpio/\${g}/value
 		sleep 3
-		echo 1 > /sys/class/gpio/\${g}/value
+		echo ${GPIOS_STATES_MODEM: -1} > /sys/class/gpio/\${g}/value
 	done
 }
 EOF
@@ -39,9 +40,10 @@ restart_modem(){
 		uci set luci.@command[-1].command="/usr/share/pwr ${g}"
 		i=$(($i+1))
         done
+	GPIOS_STATES_MODEM=${GPIOS_STATES_MODEM:="0 1"}
 cat << EOF > /usr/share/pwr
 #!/bin/sh
-for s in 0 1; do
+for s in ${GPIOS_STATES_MODEM}; do
         echo \${s} > /sys/class/gpio/\${1}/value
         sleep 3
         echo \${s} > /sys/class/gpio/\${1}/value
@@ -62,10 +64,15 @@ case $board in
 	hooolink,hl-wr832v1)
 		restart_modem gpio512
 	;;
+	cudy,tr3000-v1)
+		GPIOS_STATES_MODEM="1 0"
+		restart_modem usb
+	;;
 	huastlink,hc-g60)
 		restart_modem modem
 	;;
 	zbtlink,zbt-z8102ax-nand|\
+	zbtlink,zbt-z8102ax-nand-all|\
 	zbtlink,zbt-z8102ax-emmc)
 		restart_modem 5g1 5g2
 		fixmodems 5g1 5g2
@@ -103,7 +110,8 @@ case $board in
 		uci add_list system.led_wifi_led.mode='rx'
 		uci set system.led_wifi_led.dev='phy0-ap0'
 	;;
-	mikrotik,mikrotik_routerboard-m11g)
+	mikrotik,mikrotik_routerboard-m11g|\
+	hilink,rm20-nand)
 		continue
 	;;
 	vertell,m2-router)

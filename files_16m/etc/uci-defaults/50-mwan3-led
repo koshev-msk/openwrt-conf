@@ -96,6 +96,11 @@ case $board in
 		LED2="green:status"
 		mwan3_bled_1m
 	;;
+	cudy,tr3000-v1)
+		LED1="red:power"
+		LED2="white:status"
+		mwan3_bled_1m
+	;;
 	huasifei,ws1208v2-16m|\
 	huasifei,ws1208v2-32m)
 		LED="green:cellular"
@@ -113,6 +118,7 @@ case $board in
 		mwan3_2led_2m
 	;;
 	zbtlink,zbt-z8102ax-nand|\
+	zbtlink,zbt-z8102ax-nand-all|\
 	zbtlink,zbt-z8102ax-emmc)
 		LED1="blue:usb-0"
 		LED2="blue:usb-1"

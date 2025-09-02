@@ -273,7 +273,6 @@ stuff(){
 	configure_uci
 	uci commit
 	reload_config
-	/etc/init.d/luci-sms start
 }
 
 SLEEP=120
