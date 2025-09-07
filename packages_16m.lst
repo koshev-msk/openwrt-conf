@@ -106,6 +106,7 @@ kmod-l2tp-ip
 kmod-pppol2tp
 kmod-pptp
 kmod-nf-nathelper-extra
+kmod-button-hotplug
 # AmneziaWG VPN kmod
 kmod-amneziawg
 # wireless

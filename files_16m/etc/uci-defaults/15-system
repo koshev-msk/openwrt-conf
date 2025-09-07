@@ -58,6 +58,43 @@ EOF
 chmod +x /usr/share/pwr
 }
 
+button_modem_restart(){
+mkdir -p /etc/hotplug.d/button
+uci add system button
+uci set system.@button[-1].button="$1"
+uci set system.@button[-1].action="pressed"
+uci set system.@button[-1].handler="/etc/init.d/fixmodem restart"
+
+cat << "EOF" > /etc/hotplug.d/button/00-button
+source /lib/functions.sh
+
+do_button () {
+	local button
+	local action
+	local handler
+	local min
+	local max
+
+	config_get button "${1}" button
+	config_get action "${1}" action
+	config_get handler "${1}" handler
+	config_get min "${1}" min
+	config_get max "${1}" max
+
+	[ "${ACTION}" = "${action}" -a "${BUTTON}" = "${button}" -a -n "${handler}" ] && {
+		[ -z "${min}" -o -z "${max}" ] && eval ${handler}
+		[ -n "${min}" -a -n "${max}" ] && {
+			[ "${min}" -le "${SEEN}" -a "${max}" -ge "${SEEN}" ] && eval ${handler}
+		}
+	}
+}
+
+config_load system
+config_foreach do_button button
+EOF
+}
+
+
 MACHINE=$(awk '{print $2}' /sys/firmware/devicetree/base/model)
 
 case $board in
@@ -67,6 +104,7 @@ case $board in
 	cudy,tr3000-v1)
 		GPIOS_STATES_MODEM="1 0"
 		restart_modem usb
+		button_modem_restart BTN_0
 	;;
 	huastlink,hc-g60)
 		restart_modem modem
@@ -76,6 +114,7 @@ case $board in
 	zbtlink,zbt-z8102ax-emmc)
 		restart_modem 5g1 5g2
 		fixmodems 5g1 5g2
+		button_modem_restart BTN_0
 	;;
 	zbtlink,zbt-wg2107)
 		restart_modem modem1pwr modem2pwr
@@ -101,6 +140,7 @@ case $board in
 	irz,ru-41l)
 		restart_modem m0reset m1reset
 		fixmodems m0reset m1reset
+		button_modem_restart BTN_1
 	;;
 	# fix LED
 	zbtlink,zbt-we826-16m)
