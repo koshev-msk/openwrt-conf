@@ -126,6 +126,12 @@ iface_modemmanager(){
 	uci set network.$ifmodemname.metric=${mn}00
 }
 
+mwan3_led_config(){
+	uci set led.$ifmodemname=led
+	uci set led.$ifmodemname.iface=$ifmodemname
+	uci set led.$ifmodemname.led_on=$led_on
+}
+
 iface_mm_bearer(){
 	# NCM/ECM mode not support bearers
 	case $VIDPID in
@@ -262,6 +268,37 @@ configure_uci(){
 			logger -t "$NODE" "Generate config for MWAN3."
 			/usr/share/mwan3_gen.sh wan ${MWAN_IFACES:=modem} > /etc/config/mwan3
 			mwan3_user_conf
+			# generate led for MWAN3
+			case $board in
+				beeline,smartbox-turbo-plus|\
+				beeline,smartbox-giga|\
+				beeline,smartbox-flash)
+					LEDS="-l blue:wan -o red:status"
+				;;
+				cudy,tr3000-v1)
+					LEDS="-l white:status -o red:power"
+				;;
+				huastlink,hc-g60)
+					LEDS="-l blue:status -o green:status"
+				;;
+				zbtlink,zbt-wg2107|\
+				zbtlink,zbt-cpe2801-32m)
+					LEDS="-l green:wwan1 green:wwan2"
+				;;
+				zbtlink,zbt-z8102ax-nand|\
+				zbtlink,zbt-z8102ax-nand-all|\
+				zbtlink,zbt-z8102ax-emmc)
+					LEDS="-l blue:usb-0 blue:usb-2"
+				;;
+				zbtlink,zbt-wg1608-16m|\
+				zbtlink,zbt-wg1608-32m)
+					LEDS="-l green:wwan"
+				;;
+				*) LEDS="false" ;;
+			esac
+			! [ "$LEDS" = "false" ] && {
+				/usr/share/mwan3_led_config.sh -i ${MWAN_IFACES:=modem} ${LEDS} > /etc/config/mwan3_led
+			}
 			/etc/init.d/mwan3 restart
 		}
 		logger -t "$NODE" "Modem interface(s) setup complete."
