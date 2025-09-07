@@ -192,7 +192,7 @@ case $board in
 	;;
 	*)
 		mwan3_led_config_gen
-		mwan3_led_trigger
+		mwan3_led_trigger_gen
 		mwan3_user_add
 	;;
 esac
