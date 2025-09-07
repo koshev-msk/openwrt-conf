@@ -136,7 +136,7 @@ mwan3_led_trigger() {
 
 		# Set state LED
 		echo "$value" > "$led_path" 2>/dev/null
-}
+	}
 
 	# Get config values
 	handle_led_config() {
