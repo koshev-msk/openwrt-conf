@@ -117,7 +117,7 @@ chmod +x /usr/share/mwan3_led_config.sh
 
 mwan3_led_trigger_gen(){
 touch /etc/config/mwan3_led
-cat << EOF > /usr/share/mwan3_led_trigger.sh
+cat << 'EOF' > /usr/share/mwan3_led_trigger.sh
 . /lib/functions.sh
 
 mwan3_led_trigger() {
@@ -167,14 +167,15 @@ mwan3_led_trigger() {
 	config_load mwan3_led
 	config_foreach handle_led_config led
 }
+EOF
 
 }
 
 mwan3_user_add(){
-cat << EOF >> /etc/mwan3.user
+cat << 'EOF' >> /etc/mwan3.user
 [ -f /usr/share/mwan3_led_trigger.sh ] && {
         . /usr/share/mwan3_led_trigger.sh
-        mwan3_led_trigger \$INTERFACE \$ACTION
+        mwan3_led_trigger $INTERFACE $ACTION
 }
 
 EOF
