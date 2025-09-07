@@ -86,11 +86,15 @@ generate_config() {
 	}
 	{
 		for (i = 1; i <= NF; i++) {
-			print "config led '\''" $i "'\''"
-			print "    option iface '\''" $i "'\''"
-			print "    option led_on '\''" on_arr[i] "'\''"
-			if (leds_off != "" && i <= length(off_arr)) {
-				print "    option led_off '\''" off_arr[i] "'\''"
+			if (leds_on != "" && i <= length(on_arr) || leds_off != "" && i <= length(off_arr)) {
+				print "config led '\''" $i "'\''"
+				print "	option iface '\''" $i "'\''"
+				if (leds_on != "" && i <= length(on_arr)) {
+					print "	option led_on '\''" on_arr[i] "'\''"
+				}
+				if (leds_off != "" && i <= length(off_arr)) {
+					print "	option led_off '\''" off_arr[i] "'\''"
+				}
 			}
 			print ""
 		}
