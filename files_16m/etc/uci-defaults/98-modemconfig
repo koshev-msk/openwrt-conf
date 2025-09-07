@@ -288,7 +288,7 @@ configure_uci(){
 				zbtlink,zbt-z8102ax-nand|\
 				zbtlink,zbt-z8102ax-nand-all|\
 				zbtlink,zbt-z8102ax-emmc)
-					LEDS="-l blue:usb-0 blue:usb-2"
+					LEDS="-l blue:usb-0 blue:usb-1"
 				;;
 				zbtlink,zbt-wg1608-16m|\
 				zbtlink,zbt-wg1608-32m)
