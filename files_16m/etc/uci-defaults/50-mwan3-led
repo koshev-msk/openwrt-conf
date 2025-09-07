@@ -190,7 +190,7 @@ EOF
 board="$(cat /tmp/sysinfo/board_name)"
 
 case $board in
-	verlell,m2-router|\
+	vertell,m2-router|\
 	mikrotik,routerboard-rbm33g)
 		exit 0
 	;;
