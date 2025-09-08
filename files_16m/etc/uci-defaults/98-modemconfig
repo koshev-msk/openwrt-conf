@@ -126,12 +126,6 @@ iface_modemmanager(){
 	uci set network.$ifmodemname.metric=${mn}00
 }
 
-mwan3_led_config(){
-	uci set led.$ifmodemname=led
-	uci set led.$ifmodemname.iface=$ifmodemname
-	uci set led.$ifmodemname.led_on=$led_on
-}
-
 iface_mm_bearer(){
 	# NCM/ECM mode not support bearers
 	case $VIDPID in
