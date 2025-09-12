@@ -97,7 +97,7 @@ modeminfo_conf(){
 			uci add modeminfo modeminfo
 			uci set modeminfo.@modeminfo[-1].device=/dev/${ATPORT}
 			case $FAMILY in
-				*DELL*) uci set modeminfo.@modeminfo[-1].mmcli_name=1 ;;
+				*DELL*|*QUALCOMM*) uci set modeminfo.@modeminfo[-1].mmcli_name=1 ;;
 			esac
 		;;
 		*cdc-wdm*)
@@ -283,6 +283,9 @@ configure_uci(){
 				zbtlink,zbt-z8102ax-nand-all|\
 				zbtlink,zbt-z8102ax-emmc)
 					LEDS="-l blue:usb-0 blue:usb-1"
+				;;
+				zbtlink,zbt-z8109ax-nand-all)
+					LEDS="-l green:modem1 green:modem2 green:modem3 green:modem4"
 				;;
 				zbtlink,zbt-wg1608-16m|\
 				zbtlink,zbt-wg1608-32m)
