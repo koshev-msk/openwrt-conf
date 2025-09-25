@@ -1,30 +1,31 @@
 # LuCi app's
 luci
-#luci-app-ksmbd
 luci-app-modeminfo
-#luci-app-mmconfig
-#luci-app-smstools3
-#luci-app-pingcontrol
-#luci-app-sqm
+luci-app-mmconfig
+luci-app-smstools3
+luci-app-pingcontrol
+luci-app-sqm
 luci-app-atinout
-#luci-app-3proxy
+luci-app-3proxy
 luci-app-openvpn
+luci-app-mwan3
+luci-app-commands
 #luci-app-telegrambot
 luci-app-ttl
 #luci-app-ttyd
+luci-app-amneziawg
 # Network proto
 luci-proto-xmm
-luci-proto-mbim
-luci-proto-qmi
+#luci-proto-mbim
+#luci-proto-qmi
 luci-proto-wireguard
 #luci-proto-vpnc
 #luci-proto-openconnect
-#luci-proto-modemmanager
-luci-proto-3g
-luci-proto-ncm
+#luci-proto-3g
+#luci-proto-ncm
+luci-proto-modemmanager
 # localize RU
 #luci-i18n-base-ru
-#luci-i18n-ksmbd-ru
 #luci-i18n-modeminfo-ru
 #luci-i18n-mmconfig-ru
 #luci-i18n-smstools3-ru
@@ -33,7 +34,6 @@ luci-proto-ncm
 #luci-i18n-3proxy-ru
 #luci-i18n-openvpn-ru
 #luci-i18n-pingcontrol-ru
-#luci-i18n-package-manager-ru
 #luci-i18n-telegrambot-ru
 #luci-i18n-ttl-ru
 #luci-i18n-ttyd-ru
@@ -42,18 +42,20 @@ luci-proto-ncm
 # LuCi themes
 #luci-theme-lightblue
 # modem app
-#modeminfo-qmi
+modeminfo-qmi
 modeminfo-serial-xmm
-modeminfo-serial-telit
-modeminfo-serial-sierra
 modeminfo-serial-dell
 modeminfo-serial-quectel
+modeminfo-serial-sierra
 modeminfo-serial-fibocom
 modeminfo-serial-meig
 modeminfo-serial-simcom
-#modeminfo-telegram
-#openvpn-openssl
-#openvpn-dns-hotplug
+modeminfo-serial-telit
+modeminfo-serial-thales
+modeminfo-serial-huawei
+modeminfo-telegram
+openvpn-openssl
+openvpn-dns-hotplug
 #xl2tpd
 # remove nft
 -firewall4
@@ -65,13 +67,9 @@ modeminfo-serial-simcom
 -kmod-nft-offload
 # remove mbedtls
 -libustream-mbedtls
+#-libmbedtls12
 -libmbedtls21
 -libustream-mbedtls20201210
-#-libustream-wolfssl20201210
-#-wpad-basic-wolfssl
-#-libustream-wolfssl
-#-libustream-wolfssl20201210
-#-libwolfssl5.5.3.99a5b54a
 # add iptables
 firewall
 kmod-ip6tables
@@ -83,13 +81,12 @@ kmod-ipt-nfqueue
 kmod-ipt-conntrack-extra
 kmod-nf-ipt
 kmod-nf-ipt6
+kmod-ipt-raw
+kmod-ipt-raw6
 ip6tables-zz-legacy
 iptables-zz-legacy
 iptables-mod-nfqueue
 iptables-mod-conntrack-extra
-# iptables to nft translator
-#iptables-nft
-#ip6tables-nft
 # kernel mod's
 kmod-nfnetlink-queue
 kmod-usb-serial-qualcomm
@@ -99,45 +96,57 @@ kmod-usb-acm
 kmod-usb-net-huawei-cdc-ncm
 kmod-usb-net-qmi-wwan
 kmod-usb-net-cdc-mbim
-kmod-usb-net-rndis
+kmod-usb-storage
 kmod-usb2
-kmod-macvlan
-#kmod-usb3
+kmod-usb3
 kmod-ipt-ipopt
 #kmod-l2tp
 #kmod-l2tp-eth
 #kmod-l2tp-ip
 #kmod-pppol2tp
-kmod-pptp
+#kmod-pptp
 kmod-nf-nathelper-extra
-#kmod-fs-ksmbd
+kmod-button-hotplug
+# AmneziaWG VPN kmod
+kmod-amneziawg
 # wireless
 #wpad-basic-openssl
-#hostapd-openssl
-#wpa-supplicant-openssl
 # PPP
-#ppp-mod-pptp
+ppp-mod-pptp
 # iptables 
 iptables-mod-ipopt
-#iptables-mod-ndpi
 # libraries
-#lib3proxy
+lib3proxy
 libustream-openssl20201210
 # removed pkgs. Curl must be build with openssl library
 -wpad-basic-mbedtls
-wpad-mini
+wpad-basic-openssl
+#hostapd-openssl
+#wpa-supplicant-openssl
 #youtubeUnblock
-# network
-#ifmetric
-#tcpdump
-#whois
-#etherwake
-#curl
-#snmpd
-# utils
-#ip-full
+# replace to dnsmasq ipset
+-dnsmasq
+dnsmasq-full
+ifmetric
+# FS support
+e2fsprogs
+mkf2fs
+cfdisk
+kmod-fs-ext4
+kmod-fs-f2fs
+block-mount
+# usb utilites
 #usbutils
-#htop
-# Routing
-#bird2
-#bird2c
+#uhubctl
+# MPTCP
+kmod-inet-mptcp-diag
+mptcpd
+mptcpize
+ip-full
+# NAT64 and DNS64
+kmod-nat64
+totd
+natflow-boot
+# SNI
+#youtubeUnblock
+#luci-app-youtubeUnblock

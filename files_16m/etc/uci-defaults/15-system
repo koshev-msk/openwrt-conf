@@ -4,6 +4,35 @@
 
 board="$(cat /tmp/sysinfo/board_name)"
 
+fix_5ghz_wifi(){
+cat << 'EOF' > /etc/hotplug.d/ieee80211/01-fix-5ghz
+[ "$ACTION" == "add" ] || exit 0
+
+PHYNBR=${DEVPATH##*/phy}
+
+[ -n $PHYNBR ] || exit 0
+
+. /lib/functions.sh
+. /lib/functions/system.sh
+
+board=$(board_name)
+
+readlog(){
+	dmesg | grep 'cut here' && touch /etc/banner && sleep 5 && reboot
+}
+
+case "$board" in
+	zbtlink,zbt-wg1608-16m|\
+	zbtlink,zbt-wg1608-32m)
+		[ "$PHYNBR" = "1" ] && {
+			sleep 10 && readlog &
+		}
+        ;;
+esac
+EOF
+
+}
+
 remove_unused_init(){
 	[ -x /etc/init.d/modem_switch ] && {
 		/etc/init.d/modem_switch disable
@@ -139,6 +168,10 @@ case $board in
 	zbtlink,zbt-wg1602-v04-32m)
 		restart_modem 4g1-pwr 4g2-pwr
 		fixmodems 4g1-pwr 4g2-pwr
+	;;
+	zbtlink,zbt-wg1608-16m|\
+	zbtlink,zbt-wg1608-32m)
+		fix_5ghz_wifi
 	;;
 	irz,ru-41u|\
 	irz,ru-41l)
