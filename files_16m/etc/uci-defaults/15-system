@@ -172,6 +172,7 @@ case $board in
 	zbtlink,zbt-wg1608-16m|\
 	zbtlink,zbt-wg1608-32m)
 		fix_5ghz_wifi
+		echo '/etc/hotplug.d/ieee80211/01-fix-5ghz' >> /etc/sysupgrade.conf
 	;;
 	irz,ru-41u|\
 	irz,ru-41l)
