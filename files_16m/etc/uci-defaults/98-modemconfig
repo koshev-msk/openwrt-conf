@@ -234,6 +234,12 @@ configure_uci(){
 				ttyUSB*)
 					SMSPORT=${ATPORT%?}$((${ATPORT: -1}+1))
 					smstools3_conf
+					case $VIDPID in
+						2cb70104|2cb70109)
+							uci set smstools3.$ifmodemname.net_check='0'
+							uci set smstools3.$ifmodemname.sig_check='1'
+						;;
+					esac
 				;;
 				ttyACM*)
 					SMSPORT=${ATPORT%?}$((${ATPORT: -1}+2))
