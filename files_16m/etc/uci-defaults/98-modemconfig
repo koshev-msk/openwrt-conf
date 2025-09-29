@@ -20,7 +20,8 @@ args(){
 
 
 read_modem_list(){
-	eval $(jsonfilter -s "$(mmcli -L -J)" -e "MODEMS=$['modem-list'][*]")
+	#eval $(jsonfilter -s "$(mmcli -L -J)" -e "MODEMS=$['modem-list'][*]")
+	MODEMS=$(jsonfilter -s "$(mmcli -L -J)" -e "@['modem-list'][*]" | sort)
 }
 
 
