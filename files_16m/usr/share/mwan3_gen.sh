@@ -46,7 +46,7 @@ echo "$@" | awk -v lan=${NETWORK}/${PREFIX} '
         print "    option interval '\''30'\''"
         print "    option down '\''3'\''"
         print "    option up '\''3'\''"
-	print "    option initial_state '\''online'\''"
+	print "    option initial_state '\''offline'\''"
 	print "    list flush_conntrack '\''ifup'\''"
         print "    list flush_conntrack '\''ifdown'\''"
         print "    list flush_conntrack '\''connected'\''"
