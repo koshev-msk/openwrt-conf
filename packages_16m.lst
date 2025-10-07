@@ -76,6 +76,7 @@ kmod-ip6tables
 kmod-ipt-conntrack
 kmod-ipt-core
 kmod-ipt-nat
+kmod-ipt-nat6
 kmod-ipt-offload
 kmod-ipt-nfqueue
 kmod-ipt-conntrack-extra
