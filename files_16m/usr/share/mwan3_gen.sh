@@ -63,6 +63,30 @@ echo "$@" | awk -v lan=${NETWORK}/${PREFIX} '
         print ""
     }
 
+    # Gen members 90% main iface
+    for (i = 1; i <= n; i++) {
+        main_weight = int(BASE_WEIGHT * 0.9)
+        other_weight = int(BASE_WEIGHT * 0.1 / (n - 1))
+
+        # Main iface 90%
+        print "config member '\''" $i "_member_main'\''"
+        print "    option interface '\''" $i "'\''"
+        print "    option metric '\''1'\''"
+        print "    option weight '\''" main_weight "'\''"
+        print ""
+
+        # Other all to 10%
+        for (j = 1; j <= n; j++) {
+            if (j != i) {
+                print "config member '\''" $j "_member_main_" i "'\''"
+                print "    option interface '\''" $j "'\''"
+                print "    option metric '\''1'\''"
+                print "    option weight '\''" other_weight "'\''"
+                print ""
+            }
+        }
+    }
+
     # Gen members 70% primary iface
     for (i = 1; i <= n; i++) {
         primary_weight = int(BASE_WEIGHT * 0.7)
@@ -119,6 +143,18 @@ echo "$@" | awk -v lan=${NETWORK}/${PREFIX} '
         # Only iface mode
         print "config policy '\''only_" $i "'\''"
         print "    list use_member '\''" $i "_member_balanced'\''"
+        print ""
+    }
+
+    # Main policy (90%)
+    for (i = 1; i <= n; i++) {
+        print "config policy '\''main_" $i "'\''"
+        print "    list use_member '\''" $i "_member_main'\''"
+        for (j = 1; j <= n; j++) {
+            if (j != i) {
+                print "    list use_member '\''" $j "_member_main_" i "'\''"
+            }
+        }
         print ""
     }
 
