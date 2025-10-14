@@ -141,14 +141,14 @@ echo "$@" | awk -v lan=${NETWORK}/${PREFIX} '
     # Gen balance policies
     for (i = 1; i <= n; i++) {
         # Only iface mode
-        print "config policy '\''only_" $i "'\''"
+        print "config policy '\''100_" $i "'\''"
         print "    list use_member '\''" $i "_member_balanced'\''"
         print ""
     }
 
     # Main policy (90%)
     for (i = 1; i <= n; i++) {
-        print "config policy '\''main_" $i "'\''"
+        print "config policy '\''90_" $i "'\''"
         print "    list use_member '\''" $i "_member_main'\''"
         for (j = 1; j <= n; j++) {
             if (j != i) {
@@ -160,7 +160,7 @@ echo "$@" | awk -v lan=${NETWORK}/${PREFIX} '
 
     for (i = 1; i <= n; i++) {
         # 70% traffic primary iface
-        print "config policy '\''primary_" $i "'\''"
+        print "config policy '\''70_" $i "'\''"
         print "    list use_member '\''" $i "_member_primary'\''"
         for (j = 1; j <= n; j++) {
             if (j != i) {
@@ -173,7 +173,7 @@ echo "$@" | awk -v lan=${NETWORK}/${PREFIX} '
     if (n > 2) {
         for (i = 1; i <= n; i++) {
             # 50% traffic primary iface
-            print "config policy '\''half_" $i "'\''"
+            print "config policy '\''50_" $i "'\''"
             print "    list use_member '\''" $i "_member_half'\''"
             for (j = 1; j <= n; j++) {
                 if (j != i) {
