@@ -1,9 +1,66 @@
 #!/bin/sh
+
+[ -f /etc/.config.lock ] && exit 0
+
+. /lib/functions.sh
+. /lib/functions/uci-defaults.sh
+. /lib/functions/system.sh
+
+# genetate ula prefix from default ll address
+ula=$(awk -F [:] '{print "fc00:" tolower($3$4) ":" tolower($5$6) "::/48"}' /sys/class/net/eth0/address)
+# config network
 uci batch << EOF
 delete network.wan6
 set network.azp=interface
 set network.azp.device='azp0'
 set network.azp.proto='none'
 set network.lan.ip6assign='64'
-commit network
+set network.wan.metric='10'
+set network.globals.ula_prefix=$ula
+EOF
+
+
+board="$(cat /tmp/sysinfo/board_name)"
+
+setup_macs(){
+        local board="$1"
+        local lan_mac=""
+        local wan_mac=""
+        local label_mac=""
+        case $board in
+		huastlink,hc-g60)
+			label_mac=$(mtd_get_mac_binary "Factory" 0x4)
+			uci add network device
+			uci set network.@device[-1].name=wwan
+			uci set network.@device[-1].macaddr="$(macaddr_add $label_mac 5)"
+		;;
+                zbtlink,zbt-z8109ax-nand-all)
+                        label_mac=$(mtd_get_mac_binary "Factory" 0x4)
+			for c in 0 1; do
+				uci add network device
+				uci set network.@device[-1].name=cel${c}
+				uci set network.@device[-1].macaddr="$(macaddr_add $label_mac $((5+$c)))"
+                        done
+                ;;
+        esac
+}
+
+setup_macs $board
+uci commit network
+
+
+# fix error ifup L850 modem
+cat << 'EOF' > /etc/hotplug.d/iface/01-mm-error
+#!/bin/sh
+
+error(){
+        ERROR_CODE=$(ifstatus $1 | jsonfilter -e '@["errors"][*]["code"]')
+        [ "$ERROR_CODE" = "MM_3GPP_OPERATOR_REGISTRATION_FAILED" ] && {
+                ifup $1
+        }
+}
+
+[ "$ACTION" = "ifup-failed" ] && {
+        sleep 10 && error $INTERFACE &
+}
 EOF

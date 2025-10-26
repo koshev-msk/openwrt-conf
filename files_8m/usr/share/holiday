@@ -1,0 +1,52 @@
+#!/bin/sh
+# Russian working calendar script by Konstatntine Shevlakov at <shevlakov@132lan.ru>
+
+# start at random time. Use -s or --sleep arg.
+case $1 in
+	-s|--sleep)
+		sleep $(awk -v min=20 -v max=3600 'BEGIN{srand(); print int(rand()*(max-min+1))+min}')
+	;;
+esac
+
+# define variables 
+DATE=$(date +%Y/%m/%d)
+DAYWEEK=$(date +%w)
+URL="https://calendar.kuzyak.in/api/calendar/${DATE}"
+DATA="$(curl -s -H Content-Type:application/json -X GET $URL)"
+WORKDAY=$(jsonfilter -s "$DATA" -e "@['isWorkingDay']")
+PREHOLIDAY=$(jsonfilter -s "$DATA" -e "@['isShortDay']")
+
+
+# if holiday?
+if [ "$PREHOLIDAY" = "true" ]; then
+	case $DAYWEEK in
+		5)
+			MESSAGE="is preholiday and friday! BINGO!"
+			SLEEP="0"
+		;;
+		*)
+			MESSAGE="is preholiday!"
+			SLEEP="3600"
+		;;
+	esac
+elif [ "$WORKDAY" = "true" ]; then
+	case $DAYWEEK in
+                5)
+                        MESSAGE="is friday!"
+			SLEEP="3600"
+		;;
+		*)
+			MESSAGE="is workday!"
+			SLEEP="7200"
+		;;
+	esac
+else
+	MESSAGE="is holiday!"
+	SLEEP="false"
+fi
+
+# send log message
+logger -t "`basename $0`" "${DATE} ${MESSAGE}"
+
+# write valiable in tmp file
+echo "SLEEP=\"$SLEEP\"" > /tmp/holiday

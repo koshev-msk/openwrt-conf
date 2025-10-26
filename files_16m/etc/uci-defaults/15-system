@@ -2,6 +2,9 @@
 
 [ -f /etc/.config.lock ] && exit 0
 
+# Custom version OpenWrt Image
+CUSTOM_VER=""
+
 board="$(cat /tmp/sysinfo/board_name)"
 
 fix_5ghz_wifi(){
@@ -211,3 +214,9 @@ set luci.@command[-1].name="Firmware update"
 set luci.@command[-1].command="/usr/share/ota.sh"
 commit luci
 EOF
+
+# Set Custom Version OpenWrt Image
+[ "x${CUSTOM_VER}" != "x" ] && {
+	. /usr/lib/os-release
+	sed -i "s/^OPENWRT_RELEASE=.*/OPENWRT_RELEASE=\"$NAME ${VERSION}~${CUSTOM_VER}\"/" /usr/lib/os-release
+}

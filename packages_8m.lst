@@ -130,10 +130,10 @@ wpad-basic-openssl
 dnsmasq-full
 ifmetric
 # FS support
-e2fsprogs
+#e2fsprogs
 mkf2fs
 cfdisk
-kmod-fs-ext4
+#kmod-fs-ext4
 kmod-fs-f2fs
 block-mount
 # usb utilites

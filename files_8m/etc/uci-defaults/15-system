@@ -1,21 +1,222 @@
 #!/bin/sh
 
+[ -f /etc/.config.lock ] && exit 0
+
+# Custom version OpenWrt Image
+CUSTOM_VER=""
+
 board="$(cat /tmp/sysinfo/board_name)"
 
+fix_5ghz_wifi(){
+cat << 'EOF' > /etc/hotplug.d/ieee80211/01-fix-5ghz
+[ "$ACTION" == "add" ] || exit 0
+
+PHYNBR=${DEVPATH##*/phy}
+
+[ -n $PHYNBR ] || exit 0
+
+. /lib/functions.sh
+. /lib/functions/system.sh
+
+board=$(board_name)
+
+readlog(){
+	dmesg | grep 'cut here' && touch /etc/banner && sleep 5 && reboot
+}
+
+case "$board" in
+	zbtlink,zbt-wg1608-16m|\
+	zbtlink,zbt-wg1608-32m)
+		[ "$PHYNBR" = "1" ] && {
+			sleep 10 && readlog &
+		}
+        ;;
+esac
+EOF
+
+}
+
+remove_unused_init(){
+	[ -x /etc/init.d/modem_switch ] && {
+		/etc/init.d/modem_switch disable
+		rm -f /etc/init.d/modem_switch
+	}
+}
+
+
+fixmodems(){
+GPIOS_STATES_MODEM=${GPIOS_STATES_MODEM:="0 1"}
+cat << EOF > /etc/init.d/fixmodem
+#!/bin/sh /etc/rc.common
+#
+START=50
+
+start(){
+	for g in $@; do
+		echo ${GPIOS_STATES_MODEM%1} > /sys/class/gpio/\${g}/value
+		sleep 3
+		echo ${GPIOS_STATES_MODEM: -1} > /sys/class/gpio/\${g}/value
+	done
+}
+EOF
+chmod +x /etc/init.d/fixmodem
+/etc/init.d/fixmodem enable
+/etc/init.d/fixmodem start
+}
+
+restart_modem(){
+        i=1
+        for g in $@; do
+		uci add luci command
+		uci set luci.@command[-1].name="Restart Modem ${i} on GPIO: ${g}"
+		uci set luci.@command[-1].command="/usr/share/pwr ${g}"
+		i=$(($i+1))
+        done
+	GPIOS_STATES_MODEM=${GPIOS_STATES_MODEM:="0 1"}
+cat << EOF > /usr/share/pwr
+#!/bin/sh
+for s in ${GPIOS_STATES_MODEM}; do
+        echo \${s} > /sys/class/gpio/\${1}/value
+        sleep 3
+        echo \${s} > /sys/class/gpio/\${1}/value
+done
+
+[ -x /etc/init.d/smstools3 ] && {
+	sleep 10 && /etc/init.d/smstools3 restart &
+}
+
+exit 0
+EOF
+chmod +x /usr/share/pwr
+}
+
+button_modem_restart(){
+mkdir -p /etc/hotplug.d/button
+uci add system button
+uci set system.@button[-1].button="$1"
+uci set system.@button[-1].action="pressed"
+uci set system.@button[-1].handler="/etc/init.d/fixmodem restart"
+
+cat << "EOF" > /etc/hotplug.d/button/00-button
+source /lib/functions.sh
+
+do_button () {
+	local button
+	local action
+	local handler
+	local min
+	local max
+
+	config_get button "${1}" button
+	config_get action "${1}" action
+	config_get handler "${1}" handler
+	config_get min "${1}" min
+	config_get max "${1}" max
+
+	[ "${ACTION}" = "${action}" -a "${BUTTON}" = "${button}" -a -n "${handler}" ] && {
+		[ -z "${min}" -o -z "${max}" ] && eval ${handler}
+		[ -n "${min}" -a -n "${max}" ] && {
+			[ "${min}" -le "${SEEN}" -a "${max}" -ge "${SEEN}" ] && eval ${handler}
+		}
+	}
+}
+
+config_load system
+config_foreach do_button button
+EOF
+}
+
+
+MACHINE=$(awk '{print $2}' /sys/firmware/devicetree/base/model)
+
 case $board in
-	zbtlink,zbt-we2802d-8m|\
-	zbtlink,zbt-we2802d-16m|\
-	zbtlink,zbt-we2806-a-8m|\
-	zbtlink,zbt-we2806-a-16m)
-		MACHINE=$(awk '{print $1}' /sys/firmware/devicetree/base/model)
+	hooolink,hl-wr832v1)
+		restart_modem gpio512
 	;;
-	*)
-		MACHINE=$(awk '{print $2}' /sys/firmware/devicetree/base/model)
+	cudy,tr3000-v1)
+		GPIOS_STATES_MODEM="1 0"
+		restart_modem usb
+		button_modem_restart BTN_0
+	;;
+	huastlink,hc-g60)
+		restart_modem modem
+	;;
+	zbtlink,zbt-z8102ax-nand|\
+	zbtlink,zbt-z8102ax-nand-all|\
+	zbtlink,zbt-z8102ax-emmc)
+		restart_modem 5g1 5g2
+		fixmodems 5g1 5g2
+		button_modem_restart BTN_0
+	;;
+	zbtlink,zbt-z8109ax-nand-all)
+		restart_modem modem1 modem2 modem3 modem4
+		fixmodems modem1 modem2 modem3 modem4
+	;;
+	zbtlink,zbt-wg2107)
+		restart_modem modem1pwr modem2pwr
+		fixmodems modem1pwr modem2pwr
+	;;
+	zbtlink,zbt-cpe2801-16m|\
+	zbtlink,zbt-cpe2801-32m)
+		restart_modem mpcie1 mcpie2
+		fixmodems mpcie1 mcpie2
+	;;
+	zbtlink,zbt-we826-t3-16m|\
+	zbtlink,zbt-we826-t3-32m)
+		restart_modem modem
+		fixmodems modem
+	;;
+	zbtlink,zbt-wg1602-16m|\
+	zbtlink,zbt-wg1602-v04-16m|\
+	zbtlink,zbt-wg1602-v04-32m)
+		restart_modem 4g1-pwr 4g2-pwr
+		fixmodems 4g1-pwr 4g2-pwr
+	;;
+	zbtlink,zbt-wg1608-16m|\
+	zbtlink,zbt-wg1608-32m)
+		fix_5ghz_wifi
+		echo '/etc/hotplug.d/ieee80211/01-fix-5ghz' >> /etc/sysupgrade.conf
+	;;
+	irz,ru-41u|\
+	irz,ru-41l)
+		restart_modem m0reset m1reset
+		fixmodems m0reset m1reset
+		button_modem_restart BTN_1
+	;;
+	# fix LED
+	zbtlink,zbt-we826-16m)
+		uci del system.led_wifi_led.mode
+		uci add_list system.led_wifi_led.mode='link'
+		uci add_list system.led_wifi_led.mode='tx'
+		uci add_list system.led_wifi_led.mode='rx'
+		uci set system.led_wifi_led.dev='phy0-ap0'
+	;;
+	mikrotik,mikrotik_routerboard-m11g|\
+	hilink,rm20-nand)
+		continue
+	;;
+	vertell,m2-router)
+		restart_modem modem
 	;;
 esac
 
+! [ "$board" = "netgear,lbr20" ] && {
+	remove_unused_init
+}
+
 uci batch << EOF
-set system.@system[0].zonename='Europe/Moscow'
-set system.@system[0].hostname=$MACHINE
-set system.@system[0].timezone='MSK-3'
+set system.@system[-1].zonename='Europe/Moscow'
+set system.@system[-1].timezone='MSK-3'
+set system.@system[-1].hostname=$MACHINE
+commit system
+add luci command
+set luci.@command[-1].name="Firmware update"
+set luci.@command[-1].command="/usr/share/ota.sh"
+commit luci
 EOF
+
+# Set Custom Version OpenWrt Image
+[ "x${CUSTOM_VER}" != "x" ] && {
+	. /usr/lib/os-release
+	sed -i "s/^OPENWRT_RELEASE=.*/OPENWRT_RELEASE=\"$NAME ${VERSION}~${CUSTOM_VER}\"/" /usr/lib/os-release
+}

@@ -74,29 +74,6 @@
 		"finalize": "AT+CGATT=1",
 		"disconnect": "AT+CGACT=0,${profile}"
 	},
-	"\"marvell\"": {
-		"initialize": [
-			"AT+CFUN=1"
-		],
-		"configure": [
-			"AT+ZGDCONT=${profile},\\\"${pdptype}\\\",\\\"${apn}\\\",\\\"\\\",0,0",
-			"AT+ZGPCOAUTH=${profile},\\\"${username}\\\",\\\"${password}\\\",0"
-		],
-		"connect": "AT+ZGACT=1,${profile}",
-		"disconnect": "AT+ZGACT=0,${profile}"
-	},
-	"\"mikrotik\"": {
-		"configure": [
-			"AT+CFUN=4",
-			"AT+ZGDCONT=${profile},\\\"${pdptype}\\\",\\\"${apn}\\\",0",
-			"AT+ZDHCPLEASE=10",
-			"AT+CFUN=1"
-		],
-		"waitforconnect": "\\\"+ZCONSTAT: 1,${context_type}\\\",\\\"+ZGIPDNS: ${context_type}\\\"",
-		"connect": "AT+ZGACT=1,${context_type}",
-		"finalize": "AT+ZDHCPLEASE=0",
-		"disconnect": "AT+ZGACT=0,1"
-	},
 	"quectel": {
 		"initialize": [
 			"AT+CFUN=1"
@@ -185,18 +162,7 @@
 		},
 		"connect": "AT+RNDISCALL=1",
 		"disconnect": "AT+RNDISCALL=0"
-	},
-	"\"zte": {
-		"initialize": [
-			"AT+CFUN=1"
-		],
-		"configure": [
-			"AT+ZGDCONT=${profile},\\\"${pdptype}\\\",\\\"${apn}\\\",\\\"\\\",0,0",
-			"AT+ZGPCOAUTH=${profile},\\\"${username}\\\",\\\"${password}\\\",0"
-		],
-		"connect": "AT+ZGACT=1,${profile}",
-		"disconnect": "AT+ZGACT=0,${profile}"
-	},
+        },
 	"thinkwill": {
 		"initialize": [
 			"AT+CFUN=1",
@@ -204,7 +170,6 @@
 			"AT+CGACT=0,${profile}"
 		],
 		"configure": [
-			"AT+ZGPCOAUTH=${profile},\\\"${username}\\\",\\\"${password}\\\",${auth:-0}",
 			"AT+CGDCONT=${profile},\\\"${pdptype}\\\"${apn:+,\\\"$apn\\\"}"
 		],
 		"modes": {
@@ -218,17 +183,5 @@
 		"connect": "AT+CGACT=1,${profile}",
 		"finalize": "AT+ZGACT=1,${profile}",
 		"disconnect": "AT+ZGACT=0,${profile}"
-	},
-	"spreadtrum": {
-		"initialize": [
-			"AT+CFUN=1",
-			"AT+CCED=2,8",
-			"AT+SPTTYROUTER=1"
-		],
-		"configure": [
-			"AT+CGDCONT=${profile},\\\"${pdptype}\\\"${apn:+,\\\"$apn\\\"}"
-		],
-		"connect": "AT+SPTZCMD=\\\"Y29ubm1hbmN0bCBuZGlzZGlhbCBBVF5ORElTRFVOPSJ1c2IwIiwxLDE=\\\"",
-		"disconnect": "AT+SPTZCMD=\\\"Y29ubm1hbmN0bCBuZGlzZGlhbCBBVF5ORElTRFVOPSJ1c2IwIiwwLDE=\\\""
 	}
 }
