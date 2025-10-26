@@ -10,7 +10,7 @@ if [ $# -lt 1 ]; then
 fi
 
 if [ $# -eq 1 ]; then
-    echo "Error: interaces must be two or more." >&2
+    echo "Error: interfaces must be two or more." >&2
     exit 1
 fi
 
@@ -143,7 +143,7 @@ echo "$@" | awk -v lan=${NETWORK}/${PREFIX} '
         # Only iface mode
         print "config policy '\''100_" $i "'\''"
         print "    list use_member '\''" $i "_member_balanced'\''"
-	print "	option last_resort='\''default''\''"
+	print "	option last_resort='\''default'\''"
         print ""
     }
 
