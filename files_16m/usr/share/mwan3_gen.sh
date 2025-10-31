@@ -143,7 +143,7 @@ echo "$@" | awk -v lan=${NETWORK}/${PREFIX} '
         # Only iface mode
         print "config policy '\''100_" $i "'\''"
         print "    list use_member '\''" $i "_member_balanced'\''"
-	print "	option last_resort='\''default'\''"
+	print "    option last_resort '\''default'\''"
         print ""
     }
 
