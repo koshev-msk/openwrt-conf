@@ -209,10 +209,6 @@ set system.@system[-1].zonename='Europe/Moscow'
 set system.@system[-1].timezone='MSK-3'
 set system.@system[-1].hostname=$MACHINE
 commit system
-add luci command
-set luci.@command[-1].name="Firmware update"
-set luci.@command[-1].command="/usr/share/ota.sh"
-commit luci
 EOF
 
 # Set Custom Version OpenWrt Image
