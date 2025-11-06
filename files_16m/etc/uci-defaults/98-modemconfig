@@ -302,7 +302,10 @@ configure_uci(){
 			esac
 			! [ "$LEDS" = "false" ] && {
 				/usr/share/mwan3_led_config.sh -i ${MWAN_IFACES:=modem} ${LEDS} > /etc/config/mwan3_led
+			} || {
+				> /etc/config/mwan3_led
 			}
+
 			/etc/init.d/mwan3 restart
 		}
 		logger -t "$NODE" "Modem interface(s) setup complete."

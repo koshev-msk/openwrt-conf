@@ -115,3 +115,23 @@ add_list youtubeUnblock.@section[-1].sni_domains=discordsez.com
 add_list youtubeUnblock.@section[-1].sni_domains=discordstatus.com
 commit youtubeUnblock
 EOF
+
+
+cat << 'EOF' >> /etc/firewall.user
+# Youtube Unblock
+ytub(){
+for ipt in iptables ip6tables; do
+        $ipt -t mangle -N YT_UNBLOCK
+        $ipt -t mangle -A YT_UNBLOCK -p tcp --dport 443 \
+                -m connbytes --connbytes-dir original --connbytes-mode packets \
+                --connbytes 0:19 -j NFQUEUE --queue-num 537 --queue-bypass
+        $ipt -t mangle -A YT_UNBLOCK -p udp \
+                -m connbytes --connbytes-dir original --connbytes-mode packets \
+                --connbytes 0:8 -j NFQUEUE --queue-num 537 --queue-bypass
+        $ipt -t mangle -A POSTROUTING -j YT_UNBLOCK
+        $ipt -I OUTPUT -m mark --mark 32768/32768 -j ACCEPT
+done
+}
+ytub
+EOF
+}
