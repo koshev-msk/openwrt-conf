@@ -2,7 +2,7 @@
 
 [ -f /etc/.config.lock -a ! -x /usr/bin/youtubeUnblock ] && exit 0
 
-
+set_config(){
 uci batch << EOF
 set youtubeUnblock.@section[0].name='YouTube'
 add youtubeUnblock section
@@ -115,6 +115,7 @@ add_list youtubeUnblock.@section[-1].sni_domains=discordsez.com
 add_list youtubeUnblock.@section[-1].sni_domains=discordstatus.com
 commit youtubeUnblock
 EOF
+}
 
 
 cat << 'EOF' >> /etc/firewall.user
@@ -134,3 +135,5 @@ done
 }
 ytub
 EOF
+
+sleep 30 && set_config &
