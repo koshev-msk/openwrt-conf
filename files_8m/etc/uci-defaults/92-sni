@@ -116,6 +116,7 @@ add_list youtubeUnblock.@section[-1].sni_domains=discordstatus.com
 commit youtubeUnblock
 EOF
 
+
 cat << 'EOF' >> /etc/firewall.user
 # Youtube Unblock
 ytub(){
@@ -133,4 +134,3 @@ done
 }
 ytub
 EOF
-}
