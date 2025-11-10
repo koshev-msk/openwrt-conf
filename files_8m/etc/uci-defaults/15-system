@@ -211,8 +211,19 @@ set system.@system[-1].hostname=$MACHINE
 commit system
 EOF
 
+# OTA Update server
+[ -f /etc/config/ota ] && {
+	uci set ota.@ota[0].url='https://openwrt.132lan.ru/merona/latest'
+}
+
 # Set Custom Version OpenWrt Image
 [ "x${CUSTOM_VER}" != "x" ] && {
 	. /usr/lib/os-release
-	sed -i "s/^OPENWRT_RELEASE=.*/OPENWRT_RELEASE=\"$NAME ${VERSION}~${CUSTOM_VER}\"/" /usr/lib/os-release
+	[ -f /rom/etc/uci-defaults/fw_rev ] && {
+		. /rom/etc/uci-defaults/fw_rev
+		CUSTOM="$NAME ${VERSION}~${CUSTOM_VER}-${FW_REV}"
+	} || {
+		CUSTOM="$NAME ${VERSION}~${CUSTOM_VER}"
+	}
+	sed -i "s/^OPENWRT_RELEASE=.*/OPENWRT_RELEASE=\"${CUSTOM}\"/" /usr/lib/os-release
 }
