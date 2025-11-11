@@ -1,9 +1,21 @@
 #!/bin/sh
 
-[ -f /etc/.config.lock ] && exit 0
-
 # Custom version OpenWrt Image
 CUSTOM_VER="132lan"
+
+# Set Custom Version OpenWrt Image
+[ "x${CUSTOM_VER}" != "x" ] && {
+        . /usr/lib/os-release
+        [ -f /rom/etc/uci-defaults/fw_rev ] && {
+                . /rom/etc/uci-defaults/fw_rev
+                CUSTOM="$NAME ${VERSION}~${CUSTOM_VER}-${FW_REV}"
+        } || {
+                CUSTOM="$NAME ${VERSION}~${CUSTOM_VER}"
+        }
+        sed -i "s/^OPENWRT_RELEASE=.*/OPENWRT_RELEASE=\"${CUSTOM}\"/" /usr/lib/os-release
+}
+
+[ -f /etc/.config.lock ] && exit 0
 
 board="$(cat /tmp/sysinfo/board_name)"
 
@@ -213,17 +225,5 @@ EOF
 
 # OTA Update server
 [ -f /etc/config/ota ] && {
-	uci set ota.@ota[0].url='https://openwrt.132lan.ru/merona/latest'
-}
-
-# Set Custom Version OpenWrt Image
-[ "x${CUSTOM_VER}" != "x" ] && {
-	. /usr/lib/os-release
-	[ -f /rom/etc/uci-defaults/fw_rev ] && {
-		. /rom/etc/uci-defaults/fw_rev
-		CUSTOM="$NAME ${VERSION}~${CUSTOM_VER}-${FW_REV}"
-	} || {
-		CUSTOM="$NAME ${VERSION}~${CUSTOM_VER}"
-	}
-	sed -i "s/^OPENWRT_RELEASE=.*/OPENWRT_RELEASE=\"${CUSTOM}\"/" /usr/lib/os-release
+	uci set ota.@ota[0].url='https://openwrt.132lan.ru/releases_cell/latest'
 }
