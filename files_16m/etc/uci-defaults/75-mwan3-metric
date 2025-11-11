@@ -1,0 +1,57 @@
+#!/bin/sh
+
+
+CONFIG=/etc/hotplug.d/iface/18-mwan3-metric
+
+! [ -x /etc/init.d/mwan3 -a -x /usr/bin/ifmetric ] && {
+	exit 0
+}
+
+cat << EOF > $CONFIG
+#!/bin/sh
+
+# Set metric interface via state
+
+get_vars(){
+        jsonfilter -s "$JSON" \
+                -e "METRIC=@['metric']" \
+                -e "GW=@['route'][*]['nexthop']"
+}
+
+[ -f "/etc/config/mwan3" ] && {
+        . /lib/functions.sh
+        . /lib/mwan3/mwan3.sh
+        initscript=/etc/init.d/mwan3
+        . /lib/functions/procd.sh
+
+        [ "$MWAN3_SHUTDOWN" != 1 ] && procd_lock
+
+        [ "$MWAN3_SHUTDOWN" != 1 ] && ! /etc/init.d/mwan3 running && {
+                exit 0
+        }
+
+        config_load mwan3
+
+        config_get_bool enabled "$INTERFACE" enabled 0
+        [ "${enabled}" -eq 1 ] || {
+                exit 0
+        }
+
+        JSON=$(ifstatus $INTERFACE)
+
+        eval $(get_vars)
+
+
+        case $ACTION in
+                connected)
+                        ifmetric $DEVICE $METRIC
+                        logger -t "mwan3" "iface $DEVICE set metric $METRIC"
+                ;;
+                disconnected)
+                        ifmetric $DEVICE $(($METRIC+1000))
+                        logger -t "mwan3" "iface $DEVICE set metric $(($METRIC+1000))"
+                ;;
+        esac
+}
+
+exit 0

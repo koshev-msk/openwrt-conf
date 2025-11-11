@@ -3,7 +3,7 @@
 [ -f /etc/.config.lock ] && exit 0
 
 # Custom version OpenWrt Image
-CUSTOM_VER=""
+CUSTOM_VER="132lan"
 
 board="$(cat /tmp/sysinfo/board_name)"
 

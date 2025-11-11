@@ -25,28 +25,6 @@ read_modem_list(){
 }
 
 
-mwan3_user_conf(){
-cat << 'EOF' >> /etc/mwan3.user
-
-# Set metric interface via state
-JSON=$(ifstatus $INTERFACE)
-
-get_vars(){
-        jsonfilter -s "$JSON" \
-                -e "METRIC=@['metric']" \
-                -e "GW=@['route'][*]['nexthop']"
-}
-
-eval $(get_vars)
-
-
-case $ACTION in
-        connected) ifmetric $DEVICE $METRIC ;;
-        disconnected) ifmetric $DEVICE $(($METRIC+1000)) ;;
-esac
-EOF
-}
-
 # atinout cmd
 atinout_cfg_nl678(){
 cat << 'EOF' > /etc/atcommands.user
@@ -268,7 +246,7 @@ configure_uci(){
 		[ -x /usr/sbin/mwan3 -a -x /usr/share/mwan3_gen.sh ] && {
 			logger -t "$NODE" "Generate config for MWAN3."
 			/usr/share/mwan3_gen.sh wan ${MWAN_IFACES:=modem} > /etc/config/mwan3
-			mwan3_user_conf
+
 			# generate led for MWAN3
 			case $board in
 				beeline,smartbox-turbo-plus|\
