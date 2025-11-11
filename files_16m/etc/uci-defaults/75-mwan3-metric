@@ -8,7 +8,7 @@ CONFIG=/etc/hotplug.d/iface/18-mwan3-metric
 	exit 0
 }
 
-cat << EOF > $CONFIG
+cat << 'EOF' > $CONFIG
 #!/bin/sh
 
 # Set metric interface via state
