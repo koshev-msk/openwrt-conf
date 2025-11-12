@@ -136,6 +136,7 @@ do_button () {
 config_load system
 config_foreach do_button button
 EOF
+echo "/etc/hotplug.d/button/00-button" >> /etc/sysupgrade.conf
 }
 
 
