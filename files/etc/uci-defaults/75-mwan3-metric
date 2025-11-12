@@ -56,3 +56,4 @@ get_vars(){
 }
 
 exit 0
+EOF
