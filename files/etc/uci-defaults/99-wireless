@@ -12,19 +12,26 @@ SUFFIX=$(awk -F [:] '{print toupper($4$5$6)}' /sys/class/net/eth0/address)
 # 5 radios enough devices :)
 enable_wifi(){
 	for r in $(seq 0 5); do
-		case $(uci -q get wireless.radio${r}.band) in
+		BAND=$(uci -q get wireless.radio${r}.band)
+		case $BAND in
 			2g)
 				uci -q set wireless.radio${r}.country='RU'
 				uci -q set wireless.radio${r}.noscan='1'
-				uci -q set wireless.default_radio${r}.ssid=${MACHINE:=WIFI}_2G_${SUFFIX:=$r}
+				uci -q set wireless.default_radio${r}.ssid=${MACHINE:=WIFI}_${BAND}_${SUFFIX:=$r}
 				uci -q delete wireless.radio${r}.disabled='1'
 			;;
 			5g)
 				uci -q set wireless.radio${r}.country='RU'
-				uci -q set wireless.default_radio${r}.ssid=${MACHINE:=WIFI}_5G_${SUFFIX:=$r}
+				uci -q set wireless.default_radio${r}.ssid=${MACHINE:=WIFI}_${BAND}_${SUFFIX:=$r}
+				uci -q delete wireless.radio${r}.disabled='1'
+			;;
+			6g)
+				uci -q set wireless.radio${r}.country='RU'
+				uci -q set wireless.default_radio${r}.ssid=${MACHINE:=WIFI}_${BAND}_${SUFFIX:=$r}
 				uci -q delete wireless.radio${r}.disabled='1'
 			;;
 		esac
+		unset BAND
 	done
 
 	uci -q commit wireless
