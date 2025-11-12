@@ -118,22 +118,35 @@ EOF
 }
 
 
-cat << 'EOF' >> /etc/firewall.user
+cat << 'EOF' >> /etc/ytub.ipt
 # Youtube Unblock
 ytub(){
-for ipt in iptables ip6tables; do
-        $ipt -t mangle -N YT_UNBLOCK
-        $ipt -t mangle -A YT_UNBLOCK -p tcp --dport 443 \
-                -m connbytes --connbytes-dir original --connbytes-mode packets \
-                --connbytes 0:19 -j NFQUEUE --queue-num 537 --queue-bypass
-        $ipt -t mangle -A YT_UNBLOCK -p udp \
-                -m connbytes --connbytes-dir original --connbytes-mode packets \
-                --connbytes 0:8 -j NFQUEUE --queue-num 537 --queue-bypass
-        $ipt -t mangle -A POSTROUTING -j YT_UNBLOCK
-        $ipt -I OUTPUT -m mark --mark 32768/32768 -j ACCEPT
-done
+	for ipt in iptables ip6tables; do
+        	$ipt -t mangle -N YT_UNBLOCK
+	        $ipt -t mangle -A YT_UNBLOCK -p tcp --dport 443 \
+        	        -m connbytes --connbytes-dir original --connbytes-mode packets \
+                	--connbytes 0:19 -j NFQUEUE --queue-num 537 --queue-bypass
+	        $ipt -t mangle -A YT_UNBLOCK -p udp \
+        	        -m connbytes --connbytes-dir original --connbytes-mode packets \
+                	--connbytes 0:8 -j NFQUEUE --queue-num 537 --queue-bypass
+	        $ipt -t mangle -A POSTROUTING -j YT_UNBLOCK
+        	$ipt -I OUTPUT -m mark --mark 32768/32768 -j ACCEPT
+	done
 }
-ytub
+
+
+do_run(){
+	/etc/init.d/youtubeUnblock status > /dev/null 2>&1
+
+	[ $? -eq 0 ] && {
+		ytub
+	}
+}
+
+sleep 20 && do_run &
 EOF
+
+uci add firewall include
+uci set firewall.@include[-1].path=/etc/ytub.ipt
 
 sleep 30 && set_config &
