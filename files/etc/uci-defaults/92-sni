@@ -148,5 +148,6 @@ EOF
 
 uci add firewall include
 uci set firewall.@include[-1].path=/etc/ytub.ipt
+echo "/etc/ytub.ipt" >> /etc/sysupgrade.conf
 
 sleep 30 && set_config &
