@@ -8,6 +8,13 @@ fi
 
 MACHINE=$(awk '{print $2}' /sys/firmware/devicetree/base/model)
 SUFFIX=$(awk -F [:] '{print toupper($4$5$6)}' /sys/class/net/eth0/address)
+CC=RU
+
+config_wifi(){
+	uci -q set wireless.radio${r}.country=$CC
+	uci -q set wireless.default_radio${r}.ssid=${MACHINE:=WIFI}_${BAND}_${SUFFIX:=$r}
+	uci -q delete wireless.radio${r}.disabled='1'
+}
 
 # 5 radios enough devices :)
 enable_wifi(){
@@ -15,20 +22,11 @@ enable_wifi(){
 		BAND=$(uci -q get wireless.radio${r}.band)
 		case $BAND in
 			2g)
-				uci -q set wireless.radio${r}.country='RU'
+				config_wifi
 				uci -q set wireless.radio${r}.noscan='1'
-				uci -q set wireless.default_radio${r}.ssid=${MACHINE:=WIFI}_${BAND}_${SUFFIX:=$r}
-				uci -q delete wireless.radio${r}.disabled='1'
 			;;
-			5g)
-				uci -q set wireless.radio${r}.country='RU'
-				uci -q set wireless.default_radio${r}.ssid=${MACHINE:=WIFI}_${BAND}_${SUFFIX:=$r}
-				uci -q delete wireless.radio${r}.disabled='1'
-			;;
-			6g)
-				uci -q set wireless.radio${r}.country='RU'
-				uci -q set wireless.default_radio${r}.ssid=${MACHINE:=WIFI}_${BAND}_${SUFFIX:=$r}
-				uci -q delete wireless.radio${r}.disabled='1'
+			5g|6g)
+				config_wifi
 			;;
 		esac
 		unset BAND
