@@ -100,7 +100,7 @@ iface_modemmanager(){
 	uci set network.$ifmodemname.device=$DEVICE
 	uci set network.$ifmodemname.iptype=ipv4
 	uci set network.$ifmodemname.apn=$APN
-	uci set network.$ifmodemname.allowedauth=none
+	uci add_list network.$ifmodemname.allowedauth=none
 	uci set network.$ifmodemname.signalrate='10'
 	uci set network.$ifmodemname.metric=${mn}00
 }
