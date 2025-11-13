@@ -115,6 +115,9 @@ add_list youtubeUnblock.@section[-1].sni_domains=discordsez.com
 add_list youtubeUnblock.@section[-1].sni_domains=discordstatus.com
 commit youtubeUnblock
 EOF
+
+/etc/init.d/firewall restart
+
 }
 
 
