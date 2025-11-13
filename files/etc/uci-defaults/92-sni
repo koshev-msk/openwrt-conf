@@ -119,31 +119,41 @@ EOF
 
 
 cat << 'EOF' >> /etc/ytub.ipt
+. /lib/functions.sh
+
+handle_config(){
+	local enabled
+	config_get enable "$1" enabled
+	[ "$enable" = "1" ] && {
+		run_ipt=1
+	}
+}
+
+# get config
+config_load youtubeUnblock
+config_foreach handle_config section
+
+
 # Youtube Unblock
 ytub(){
 	for ipt in iptables ip6tables; do
-        	$ipt -t mangle -N YT_UNBLOCK
-	        $ipt -t mangle -A YT_UNBLOCK -p tcp --dport 443 \
-        	        -m connbytes --connbytes-dir original --connbytes-mode packets \
-                	--connbytes 0:19 -j NFQUEUE --queue-num 537 --queue-bypass
-	        $ipt -t mangle -A YT_UNBLOCK -p udp \
-        	        -m connbytes --connbytes-dir original --connbytes-mode packets \
-                	--connbytes 0:8 -j NFQUEUE --queue-num 537 --queue-bypass
-	        $ipt -t mangle -A POSTROUTING -j YT_UNBLOCK
-        	$ipt -I OUTPUT -m mark --mark 32768/32768 -j ACCEPT
+		$ipt -t mangle -N YT_UNBLOCK
+		$ipt -t mangle -A YT_UNBLOCK -p tcp --dport 443 \
+			-m connbytes --connbytes-dir original --connbytes-mode packets \
+			--connbytes 0:19 -j NFQUEUE --queue-num 537 --queue-bypass
+		$ipt -t mangle -A YT_UNBLOCK -p udp \
+			-m connbytes --connbytes-dir original --connbytes-mode packets \
+			--connbytes 0:8 -j NFQUEUE --queue-num 537 --queue-bypass
+		$ipt -t mangle -A POSTROUTING -j YT_UNBLOCK
+		$ipt -I OUTPUT -m mark --mark 32768/32768 -j ACCEPT
 	done
 }
 
 
-do_run(){
-	/etc/init.d/youtubeUnblock status > /dev/null 2>&1
 
-	[ $? -eq 0 ] && {
-		ytub
-	}
-}
-
-sleep 20 && do_run &
+case "$run_ipt" in
+        1) ytub ;;
+esac
 EOF
 
 uci add firewall include

@@ -55,12 +55,17 @@ cat << 'EOF' > /etc/hotplug.d/iface/01-mm-error
 
 error(){
         ERROR_CODE=$(ifstatus $1 | jsonfilter -e '@["errors"][*]["code"]')
-        [ "$ERROR_CODE" = "MM_3GPP_OPERATOR_REGISTRATION_FAILED" ] && {
-                ifup $1
-        }
+        case "$ERROR_CODE" in
+		MM_3GPP_OPERATOR_REGISTRATION_FAILED|\
+		MM_FAILED_SETTING_PREFERRED_MODE)
+			ifup $1
+		;;
+	esac
 }
 
 [ "$ACTION" = "ifup-failed" ] && {
-        sleep 10 && error $INTERFACE &
+	sleep 10 && error $INTERFACE &
 }
 EOF
+
+echo '/etc/hotplug.d/iface/01-mm-error' >> /etc/sysupgrade.conf
