@@ -1,5 +1,7 @@
 #!/bin/sh
 
+[ -f /lib/modules/$(uname -r)/nat64.ko ] || exit 0
+
 MODULE=/etc/modules.d/33-nat64
 IP4PREFIX=172.16.250.0
 IP6PREFIX=64:ff9b::
@@ -12,6 +14,8 @@ rmmod nat64
 insmod $(cat $MODULE)
 
 [ -f /etc/.config.lock ] && exit 0
+
+echo "$MODULE" >> /etc/sysupgrade.conf
 
 uci batch << EOF
 set network.nat64=interface

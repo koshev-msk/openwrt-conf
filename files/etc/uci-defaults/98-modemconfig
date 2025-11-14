@@ -27,7 +27,7 @@ read_modem_list(){
 
 # atinout cmd
 atinout_cfg_nl678(){
-cat << 'EOF' > /etc/atcommands.user
+cat << 'EOF' >> /etc/atcommands.user
 Demo command "ATI";ATI
 NL678 - to NCM(23);AT+GTUSBMODE=23
 NL678 - to QMI(22);AT+GTUSBMODE=22
@@ -37,7 +37,7 @@ EOF
 }
 
 atinout_cfg_l850(){
-cat << 'EOF' > /etc/atcommands.user
+cat << 'EOF' >> /etc/atcommands.user
 Demo command "ATI";ATI
 L850 - to MBIM(7);AT+GTUSBMODE=7
 L850 - to NCM(0);AT+GTUSBMODE=0
@@ -242,6 +242,8 @@ configure_uci(){
 		for a in stop disable; do
 			/etc/init.d/modemmanager ${a}
 		done
+		atinout_cfg_l850
+		atinout_cfg_nl678
 	} || {
 		[ -x /usr/sbin/mwan3 -a -x /usr/share/mwan3_gen.sh ] && {
 			logger -t "$NODE" "Generate config for MWAN3."
@@ -278,7 +280,7 @@ configure_uci(){
 				;;
 				*) LEDS="false" ;;
 			esac
-			! [ "$LEDS" = "false" ] && {
+			[ "$LEDS" != "false" -a -x /usr/share/mwan3_led_config.sh ] && {
 				/usr/share/mwan3_led_config.sh -i ${MWAN_IFACES:=modem} ${LEDS} > /etc/config/mwan3_led
 			} || {
 				> /etc/config/mwan3_led

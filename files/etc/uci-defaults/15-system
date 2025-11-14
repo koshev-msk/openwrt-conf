@@ -46,6 +46,8 @@ case "$board" in
 esac
 EOF
 
+echo '/etc/hotplug.d/ieee80211/01-fix-5ghz' >> /etc/sysupgrade.conf
+
 }
 
 remove_unused_init(){
@@ -74,6 +76,7 @@ EOF
 chmod +x /etc/init.d/fixmodem
 /etc/init.d/fixmodem enable
 /etc/init.d/fixmodem start
+echo '/etc/init.d/fixmodem' >> /etc/sysupgrade.conf
 }
 
 restart_modem(){
@@ -100,6 +103,7 @@ done
 exit 0
 EOF
 chmod +x /usr/share/pwr
+echo '/usr/share/pwr' >> /etc/sysupgrade.conf
 }
 
 button_modem_restart(){
@@ -188,7 +192,6 @@ case $board in
 	zbtlink,zbt-wg1608-16m|\
 	zbtlink,zbt-wg1608-32m)
 		fix_5ghz_wifi
-		echo '/etc/hotplug.d/ieee80211/01-fix-5ghz' >> /etc/sysupgrade.conf
 	;;
 	irz,ru-41u|\
 	irz,ru-41l)

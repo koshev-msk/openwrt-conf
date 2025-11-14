@@ -23,3 +23,5 @@ tcppm -osTCP_NODELAY -ocTCP_NODELAY -s0 -i${LANIP} 3128 127.0.0.1 1090
 #tcppm -osTCP_NODELAY -ocTCP_NODELAY -s0 -i${LANIP6} 3128 ::1 1090
 notransparent
 EOF
+
+echo "$CONFIG" >> /etc/sysupgrade.conf
