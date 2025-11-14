@@ -4,8 +4,7 @@ LOCK="/etc/.config.lock"
 
 ! [ -f $LOCK ] && {
 	echo '/etc/openvpn' >> /etc/sysupgrade.conf
-	echo '/usr/share/mwan3_*' >> /etc/sysupgrade.conf
-	echo '/etc/init.d/fixmodem' >> /etc/sysupgrade.conf
+	echo '/usr/share/mwan3_gen.sh' >> /etc/sysupgrade.conf
 	echo "$LOCK" >> /etc/sysupgrade.conf
 	touch $LOCK
 }
