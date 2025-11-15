@@ -17,6 +17,10 @@ set network.azp.proto='none'
 set network.lan.ip6assign='64'
 set network.wan.metric='10'
 set network.globals.ula_prefix=$ula
+del dhcp.lan.ra
+del dhcp.lan.ra_slaac
+del dhcp.lan.ra_flags
+del dhcp.lan.dhcpv6
 EOF
 
 

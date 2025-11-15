@@ -31,3 +31,5 @@ do_run(){
 
 sleep 10 && do_run &
 EOF
+
+echo '/etc/hotplug.d/iface/80-mptcp' >> /etc/sysupgrade.conf
