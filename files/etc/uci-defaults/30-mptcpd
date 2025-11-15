@@ -6,7 +6,7 @@ case $DISTRIB_TARGET in
 	*76x8*) exit 0 ;;
 esac
 
-[ -f /etc/.config.lock ] && exit 0
+[ -f /etc/.config.lock -a ! -x /usr/bin/mptcpd ] && exit 0
 
 cat << 'EOF' > /etc/mptcpd/mptcpd.conf
 [core]
