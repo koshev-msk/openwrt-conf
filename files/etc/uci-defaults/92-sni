@@ -1,6 +1,6 @@
 #!/bin/sh
 
-[ -f /etc/.config.lock -a ! -x /usr/bin/youtubeUnblock ] && exit 0
+[ -f /etc/.config.lock -o ! -x /usr/bin/youtubeUnblock ] && exit 0
 
 set_config(){
 uci batch << EOF
@@ -121,7 +121,7 @@ EOF
 }
 
 
-cat << 'EOF' >> /etc/ytub.ipt
+cat << 'EOF' > /etc/ytub.ipt
 . /lib/functions.sh
 
 handle_config(){

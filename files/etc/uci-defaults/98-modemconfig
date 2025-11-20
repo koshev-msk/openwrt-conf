@@ -45,6 +45,13 @@ L850 - reboot modem;AT+CFUN=15
 EOF
 }
 
+atinout_msg(){
+	logger -t "$NODE" "WARNING: Generate atinout commands for change USB-composition"
+	logger -t "$NODE" "WARNING: Go to \"Modem\" -> \"AT Commands\" and select modem mode."
+	logger -t "$NODE" "WARNING: Select AT-port and put command to modem"
+	logger -t "$NODE" "WARNING: For autoconfig reset router to defaults."
+}
+
 # stand up modems
 standby_modems(){
 	i=0
@@ -105,6 +112,16 @@ iface_modemmanager(){
 	uci set network.$ifmodemname.metric=${mn}00
 }
 
+pingcontrol_setup(){
+	uci set pingcontrol.$ifmodemname=pingcontrol
+	uci set pingcontrol.$ifmodemname.enabled='1'
+	uci set pingcontrol.$ifmodemname.check_period='60'
+	uci set pingcontrol.$ifmodemname.iface=$ifmodemname
+	uci set pingcontrol.$ifmodemname.sw_before_modres='2'
+	uci set pingcontrol.$ifmodemname.sw_before_sysres='5'
+	uci set pingcontrol.$ifmodemname.testip='dns.yandex'
+}
+
 iface_mm_bearer(){
 	# NCM/ECM mode not support bearers
 	case $VIDPID in
@@ -113,10 +130,12 @@ iface_mm_bearer(){
 			uci set network.$ifmodemname.init_epsbearer=none
 			atinout_cfg_nl678
 			logger -t "$NODE" "WARNING: modem in NCM mode, but will work QMI. Please setup modem mode AT-command"
+			atinout_msg
 		;;
 		*8087095a*)
 			atinout_cfg_l850
 			logger -t "$NODE" "WARNING: modem in XMM mode, check modem model, if model L850 please setup modem mode AT-command"
+			atinout_msg
 		;;
 		*) uci set network.$ifmodemname.init_epsbearer=default ;;
 	esac
@@ -201,6 +220,7 @@ configure_uci(){
 		[ "x${m}" != "x" ] && [ "$NOT_SUPPORT_MM" = "0" ] && {
 			iface_modemmanager
 			iface_mm_bearer
+			pingcontrol_setup
 			uci add_list firewall.@zone[1].network=$ifmodemname
 			logger -t "$NODE" "Setting up modem interface \"$ifmodemname\" with APN: ${APN}"
 		} || {
@@ -237,13 +257,15 @@ configure_uci(){
 			/etc/init.d/fixmodem disable
 		}
 	}
+
 	[ "$NOT_SUPPORT_MM" = "1" ] && {
-		logger -t "$NODE" "WARNING: One or more installed modems not fully supported by modemmanager. Service modemmanager is stopped."
+		logger -t "$NODE" "WARNING: One or more installed modems not supported by modemmanager. Service modemmanager is stopped."
 		for a in stop disable; do
 			/etc/init.d/modemmanager ${a}
 		done
 		atinout_cfg_l850
 		atinout_cfg_nl678
+		atinout_msg
 	} || {
 		[ -x /usr/sbin/mwan3 -a -x /usr/share/mwan3_gen.sh ] && {
 			logger -t "$NODE" "Generate config for MWAN3."

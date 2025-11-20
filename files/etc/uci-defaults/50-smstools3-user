@@ -4,59 +4,57 @@
 
 [ ! -x /usr/share/luci-app-smstools3 ] && exit 0
 
-
-cat << 'EOF' >> /etc/smstools3.user
+cat << 'EOF_CONFIG' >> /etc/smstools3.user
 # Resend incoming SMS Messages to telegram bot
 # or define phone number
 
 # Telegram bot token
-token=$(uci -q get telegrambot.config.chat_id)
+bot_token=$(uci -q get telegrambot.config.bot_token)
 # Send chat id messages
-chat_id=$(uci -q get telegrambot.config.bot_token)
+chat_id=$(uci -q get telegrambot.config.chat_id)
 # Phone number to resend message without "+"
 PHONE=""
-
 
 # Send to Telegram
 send_telegram(){
 	/usr/bin/curl -d "chat_id=$chat_id&text=$text" \
-		-X POST https://api.telegram.org/bot"$token"/sendMessage
+		-X POST "https://api.telegram.org/bot$bot_token/sendMessage"
 }
 
 # Send to SMS
 send_sms(){
-	/usr/bin/sendsms $PHONE "$text"
+	/usr/bin/sendsms "$PHONE" "$text"
 }
 
 # Body Message
 msg_body(){
-cat <<EOF
+cat << EOF_BODY
 Hostname: $HOSTNAME
 $content
 From: $from
-EOF
+EOF_BODY
 }
 
 # Select way to resend incoming message
 # if variables $token an $telegram not defined
 # message send via smsd utility
 run_msg(){
-	if [ "$token" = "" -o "$chat_id" = "" ]; then
-		if [ "$from" != "$PHONE" -a "$PHONE" != "" ]; then
+	if [ -z "$bot_token" ] || [ -z "$chat_id" ]; then
+		if [ "$from" != "$PHONE" ] && [ -n "$PHONE" ]; then
 			send_sms
 		fi
 	else
-	        send_telegram
+		send_telegram
 	fi
 }
 
 # Stuff
-if [ "$1" == "RECEIVED" ]; then
-        from=$(awk -F ': ' '/From:/{printf $2}' $2)
-        content=$(sed -e '1,/^$/ d' < "$2")
-        text=$(msg_body)
+if [ "$1" = "RECEIVED" ]; then
+	from=$(awk -F ': ' '/From:/{printf $2}' "$2")
+	content=$(sed -e '1,/^$/ d' < "$2")
+	text=$(msg_body)
 	run_msg
 fi
-EOF
+EOF_CONFIG
 
 echo '/etc/smstools3.user' >> /etc/sysupgrade.conf
