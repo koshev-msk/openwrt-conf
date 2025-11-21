@@ -39,7 +39,7 @@ echo "$@" | awk -v lan=${NETWORK}/${PREFIX} '
         print "    option enabled '\''1'\''"
         print "    option family '\''ipv4'\''"
         print "    option track_method '\''ping'\''"
-        print "    list track_ip '\''132lan.ru'\''"
+        print "    list track_ip '\''dns.yandex'\''"
         print "    option reliability '\''1'\''"
         print "    option count '\''1'\''"
         print "    option timeout '\''2'\''"
