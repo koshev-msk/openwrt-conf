@@ -116,6 +116,7 @@ pingcontrol_setup(){
 	uci set pingcontrol.$ifmodemname=pingcontrol
 	uci set pingcontrol.$ifmodemname.enabled='1'
 	uci set pingcontrol.$ifmodemname.check_period='60'
+	uci set pingcontrol.$ifmodemname.ping_silent='1'
 	uci set pingcontrol.$ifmodemname.iface=$ifmodemname
 	uci set pingcontrol.$ifmodemname.sw_before_modres='2'
 	uci set pingcontrol.$ifmodemname.sw_before_sysres='5'
