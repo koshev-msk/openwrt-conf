@@ -154,9 +154,16 @@ ytub(){
 
 
 
+check_service(){
+	sleep 15 && \
+		/etc/init.d/youtubeUnblock status >/dev/null  2>&1
+}
+
+
 case "$run_ipt" in
-        1) ytub ;;
+	1) check_service && ytub & ;;
 esac
+
 EOF
 
 uci add firewall include
