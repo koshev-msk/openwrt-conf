@@ -3,10 +3,10 @@
 # modem configurator via mmcli ytility
 # by koshev-msk copyright 2025
 
-# check mmcli utility
-
+# check soft upgrade
 [ -f /etc/.config.lock ] && exit 0
 
+# check mmcli utility
 [ -x /usr/bin/mmcli ] || exit 0
 
 board="$(cat /tmp/sysinfo/board_name)"
@@ -95,6 +95,7 @@ modeminfo_conf(){
 	esac
 }
 
+# smstools3 setup
 smstools3_conf(){
 	uci set smstools3.$ifmodemname=modem
 	uci set smstools3.$ifmodemname.device=/dev/${SMSPORT}
@@ -112,6 +113,7 @@ iface_modemmanager(){
 	uci set network.$ifmodemname.metric=${mn}00
 }
 
+# ping check setup
 pingcontrol_setup(){
 	uci set pingcontrol.$ifmodemname=pingcontrol
 	uci set pingcontrol.$ifmodemname.enabled='1'
@@ -217,7 +219,7 @@ configure_uci(){
 			*) ATPORT=$(echo "$PORTS" | awk '{ for (i=1; i<=NF; i++) { if ($(i+1) == "(at)") { print $i; break; }}}') ;;
 		esac
 
-		# set uci network
+		# set uci network and ping check
 		[ "x${m}" != "x" ] && [ "$NOT_SUPPORT_MM" = "0" ] && {
 			iface_modemmanager
 			iface_mm_bearer
@@ -225,9 +227,10 @@ configure_uci(){
 			uci add_list firewall.@zone[1].network=$ifmodemname
 			logger -t "$NODE" "Setting up modem interface \"$ifmodemname\" with APN: ${APN}"
 		} || {
-			logger -t "$NODE" "WARNING: modem: ${VID}:${PID} not supported by modemmanager. Please manualy configure interface."
+			logger -t "$NODE" "WARNING: modem: ${VID}:${PID} not supported by modemmanager."
+			logger -t "$NODE" "WARNING: Please manualy configure interface."
 		}
-		# set modeminfo
+		# setting up modeminfo and smstools3
 		! [ "$ATPORT" = "" ] && {
 			modeminfo_conf
 			case $ATPORT in
@@ -253,6 +256,17 @@ configure_uci(){
 		MWAN_IFACES="$MWAN_IFACES $ifmodemname"
 		unset ATPORT FAMILY
 	done
+
+	[ ! -n "$SMSPORT" -a "$NOT_SUPPORT_MM" = "0" ] && {
+		for i in smstools3 luci-sms; do
+			for a in stop disable; do
+				/etc/init.d/${i} ${a}
+			done
+		done
+		logger -t "$NODE" "WARNING: Any installed modems no have two or more AT-ports"
+		logger -t "$NODE" "WARNING: SMS messaging funcionality disabled."
+		logger -t "$NODE" "WARNING: Please manually configure service."
+	}
 	[ "$L850" = "0" ] && {
 		[ -x /etc/init.d/fixmodem ] && {
 			/etc/init.d/fixmodem disable
@@ -260,9 +274,13 @@ configure_uci(){
 	}
 
 	[ "$NOT_SUPPORT_MM" = "1" ] && {
-		logger -t "$NODE" "WARNING: One or more installed modems not supported by modemmanager. Service modemmanager is stopped."
-		for a in stop disable; do
-			/etc/init.d/modemmanager ${a}
+		logger -t "$NODE" "WARNING: Any installed modems not supported by autoconfiguration."
+		logger -t "$NODE" "WARNING: Mobile services is stopped."
+		logger -t "$NODE" "WARNING: Please manually configure it."
+		for i in smstools3 luci-sms modemmanager; do
+			for a in stop disable; do
+				/etc/init.d/${i} ${a}
+			done
 		done
 		atinout_cfg_l850
 		atinout_cfg_nl678

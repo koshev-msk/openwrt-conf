@@ -11,10 +11,6 @@ ula=$(awk -F [:] '{print "fc00:" tolower($3$4) ":" tolower($5$6) "::/48"}' /sys/
 # config network
 uci batch << EOF
 delete network.wan6
-set network.azp=interface
-set network.azp.device='azp0'
-set network.azp.proto='none'
-set network.lan.ip6assign='64'
 set network.wan.metric='10'
 set network.globals.ula_prefix=$ula
 del dhcp.lan.ra
