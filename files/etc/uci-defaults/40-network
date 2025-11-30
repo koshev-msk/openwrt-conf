@@ -17,6 +17,7 @@ del dhcp.lan.ra
 del dhcp.lan.ra_slaac
 del dhcp.lan.ra_flags
 del dhcp.lan.dhcpv6
+add_list dhcp.@dnsmasq[-1].address=/router.lan/$(uci -q get network.lan.ipaddr)
 EOF
 
 
@@ -47,6 +48,7 @@ setup_macs(){
 
 setup_macs $board
 uci commit network
+uci commit dhcp
 
 
 # fix error ifup L850 modem

@@ -15,9 +15,9 @@ luci-app-commands
 #luci-app-telegrambot
 luci-app-ttl
 #luci-app-ttyd
-luci-app-amneziawg
 # Network proto
 luci-proto-xmm
+luci-proto-amneziawg
 #luci-proto-mbim
 #luci-proto-qmi
 luci-proto-wireguard
