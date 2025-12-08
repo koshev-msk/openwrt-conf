@@ -165,6 +165,7 @@ case $board in
 		fixmodems 5g1 5g2
 		button_modem_restart BTN_0
 	;;
+	huastlink,hc-g90|\
 	zbtlink,zbt-z8109ax-nand-all)
 		restart_modem modem1 modem2 modem3 modem4
 		fixmodems modem1 modem2 modem3 modem4

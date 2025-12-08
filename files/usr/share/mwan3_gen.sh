@@ -3,6 +3,8 @@
 # simple mwan3 config generator
 # copyright by koshev-msk 2025
 
+OFFSET_METRIC=1000
+
 # check args
 if [ $# -lt 1 ]; then
     echo "Usage: $0 <interface1> [interface2] ..." >&2
@@ -23,7 +25,7 @@ if ! [ -n ${NETWORK} -o -n ${PREFIX} ]; then
 fi
 
 # awk config generator
-echo "$@" | awk -v lan=${NETWORK}/${PREFIX} '
+echo "$@" | awk -v lan=${NETWORK}/${PREFIX} -v offset_metric=$OFFSET_METRIC '
 {
 
 
@@ -35,6 +37,9 @@ echo "$@" | awk -v lan=${NETWORK}/${PREFIX} '
     BASE_WEIGHT = 1000
     # iface section generate
     for (i = 1; i <= n; i++) {
+
+	off_metric = i * 100 + offset_metic
+
         print "config interface '\''" $i "'\''"
         print "    option enabled '\''1'\''"
         print "    option family '\''ipv4'\''"
@@ -46,6 +51,7 @@ echo "$@" | awk -v lan=${NETWORK}/${PREFIX} '
         print "    option interval '\''30'\''"
         print "    option down '\''3'\''"
         print "    option up '\''3'\''"
+	print "    option off_metric '\''" off_metric "'\''"
 	print "    option initial_state '\''offline'\''"
 	print "    list flush_conntrack '\''ifup'\''"
         print "    list flush_conntrack '\''ifdown'\''"

@@ -120,6 +120,8 @@ EOF
 
 }
 
+# check legacy firewall
+if [ -x /usr/sbin/iptables-legacy -o -x /usr/sbin/ip6tables-legacy ]; then
 
 cat << 'EOF' > /etc/ytub.ipt
 . /lib/functions.sh
@@ -169,5 +171,5 @@ EOF
 uci add firewall include
 uci set firewall.@include[-1].path=/etc/ytub.ipt
 echo "/etc/ytub.ipt" >> /etc/sysupgrade.conf
-
+fi
 sleep 30 && set_config &

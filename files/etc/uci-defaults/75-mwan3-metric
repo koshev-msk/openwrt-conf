@@ -19,7 +19,7 @@ get_vars(){
                 -e "GW=@['route'][*]['nexthop']"
 }
 
-[ -f "/etc/config/mwan3" ] && {
+[ -f "/etc/config/mwan3" -a -x /usr/bin/ifmetric ] && {
         . /lib/functions.sh
         . /lib/mwan3/mwan3.sh
         initscript=/etc/init.d/mwan3
@@ -41,7 +41,10 @@ get_vars(){
         JSON=$(ifstatus $INTERFACE)
 
         eval $(get_vars)
+	
+	config_get off_metric "$INTERFACE" off_metric
 
+	! [ -n "$off_metric" ] && exit 0
 
         case $ACTION in
                 connected)
@@ -49,8 +52,10 @@ get_vars(){
                         logger -t "mwan3" "iface $DEVICE set metric $METRIC"
                 ;;
                 disconnected)
-                        ifmetric $DEVICE $(($METRIC+1000))
-                        logger -t "mwan3" "iface $DEVICE set metric $(($METRIC+1000))"
+			[ -n "$DEVICE" ] && {
+	                        ifmetric $DEVICE $off_metric
+        	                logger -t "mwan3" "iface $DEVICE set metric $off_metric"
+			}
                 ;;
         esac
 }

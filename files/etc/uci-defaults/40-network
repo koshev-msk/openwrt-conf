@@ -29,7 +29,8 @@ setup_macs(){
         local wan_mac=""
         local label_mac=""
         case $board in
-		huastlink,hc-g60)
+		huastlink,hc-g60|\
+		huastlink,hc-g90)
 			label_mac=$(mtd_get_mac_binary "Factory" 0x4)
 			uci add network device
 			uci set network.@device[-1].name=wwan
