@@ -38,7 +38,7 @@ echo "$@" | awk -v lan=${NETWORK}/${PREFIX} -v offset_metric=$OFFSET_METRIC '
     # iface section generate
     for (i = 1; i <= n; i++) {
 
-	off_metric = i * 100 + offset_metic
+	off_metric = i * 100 + offset_metric
 
         print "config interface '\''" $i "'\''"
         print "    option enabled '\''1'\''"
