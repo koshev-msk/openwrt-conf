@@ -74,7 +74,8 @@ get_modem_param(){
 	jsonfilter -s "$(mmcli -m ${m} -J)" \
 			-e "DEVICE=$['modem']['generic']['device']" \
 			-e "PORTS=$['modem']['generic']['ports'][*]" \
-			-e "OPERATOR=$['modem']['3gpp']['operator-code']"
+			-e "OPERATOR=$['modem']['3gpp']['operator-code']" \
+			-e "FAILED=$['modem']['generic']['state-failed-reason']"
 }
 # setting up modeminfo dashboard
 modeminfo_conf(){
@@ -176,6 +177,10 @@ configure_uci(){
 			[ "$VID" -a "$PID" ] && {
 				FAMILY=$(awk -F [\;] '/'$VIDPID'/{print toupper($2)}' $RES)
 				logger -t "$NODE" "Found family $FAMILY modem: ${VID}:${PID}"
+			}
+			[ "$FAILED" = "--" ] || {
+				logger -t "$NODE" "But modem failed \"$FAILED\" reason. Skip setup."
+				continue
 			}
 		}
 		# get APN from MCCMNC code

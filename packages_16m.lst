@@ -86,10 +86,12 @@ kmod-nf-ipt
 kmod-nf-ipt6
 kmod-ipt-raw
 kmod-ipt-raw6
+kmod-ipt-geoip
 ip6tables-zz-legacy
 iptables-zz-legacy
 iptables-mod-nfqueue
 iptables-mod-conntrack-extra
+iptables-mod-geoip
 # kernel mod's
 kmod-nfnetlink-queue
 kmod-usb-serial-qualcomm
@@ -136,6 +138,8 @@ mkf2fs
 cfdisk
 kmod-fs-ext4
 kmod-fs-f2fs
+kmod-fs-vfat
+kmod-fs-exfat
 block-mount
 # usb utilites
 usbutils
@@ -154,3 +158,5 @@ natflow-boot
 #luci-app-youtubeUnblock
 # LED
 mwan3-ledhelper
+# Geoip maxminddb parser
+maxminddb-dump-country

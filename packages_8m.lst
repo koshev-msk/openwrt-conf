@@ -8,13 +8,13 @@ luci-app-sqm
 luci-app-atinout
 luci-app-3proxy
 luci-app-openvpn
-luci-app-ota
 luci-app-mwan3
 luci-app-mwan3-ledhelper
+luci-app-ota
 luci-app-commands
 #luci-app-telegrambot
 luci-app-ttl
-#luci-app-ttyd
+luci-app-ttyd
 # Network proto
 luci-proto-xmm
 luci-proto-amneziawg
@@ -55,10 +55,10 @@ modeminfo-serial-simcom
 modeminfo-serial-telit
 modeminfo-serial-thales
 modeminfo-serial-huawei
-modeminfo-telegram
+#modeminfo-telegram
 openvpn-openssl
 openvpn-dns-hotplug
-#xl2tpd
+xl2tpd
 # remove nft
 -firewall4
 -nftables
@@ -86,10 +86,12 @@ kmod-nf-ipt
 kmod-nf-ipt6
 kmod-ipt-raw
 kmod-ipt-raw6
+kmod-ipt-geoip
 ip6tables-zz-legacy
 iptables-zz-legacy
 iptables-mod-nfqueue
 iptables-mod-conntrack-extra
+iptables-mod-geoip
 # kernel mod's
 kmod-nfnetlink-queue
 kmod-usb-serial-qualcomm
@@ -103,11 +105,11 @@ kmod-usb-storage
 kmod-usb2
 kmod-usb3
 kmod-ipt-ipopt
-#kmod-l2tp
-#kmod-l2tp-eth
-#kmod-l2tp-ip
-#kmod-pppol2tp
-#kmod-pptp
+kmod-l2tp
+kmod-l2tp-eth
+kmod-l2tp-ip
+kmod-pppol2tp
+kmod-pptp
 kmod-nf-nathelper-extra
 kmod-button-hotplug
 # AmneziaWG VPN kmod
@@ -123,20 +125,21 @@ lib3proxy
 libustream-openssl20201210
 # removed pkgs. Curl must be build with openssl library
 -wpad-basic-mbedtls
-wpad-basic-openssl
 #hostapd-openssl
 #wpa-supplicant-openssl
+wpad-basic-openssl
 #youtubeUnblock
 # replace to dnsmasq ipset
 -dnsmasq
 dnsmasq-full
 ifmetric
 # FS support
-#e2fsprogs
+e2fsprogs
 mkf2fs
 cfdisk
-#kmod-fs-ext4
+kmod-fs-ext4
 kmod-fs-f2fs
+kmod-fs-vfat
 block-mount
 # usb utilites
 #usbutils
@@ -155,3 +158,5 @@ natflow-boot
 #luci-app-youtubeUnblock
 # LED
 mwan3-ledhelper
+# Geoip maxminddb parser
+maxminddb-dump-country
