@@ -52,6 +52,14 @@ atinout_msg(){
 	logger -t "$NODE" "WARNING: For autoconfig reset router to defaults."
 }
 
+
+failed_msg(){
+	logger -t "$NODE" "WARNING: But modem is failed with reason: \"${FAILED}\". Functionality is disabled."
+	logger -t "$NODE" "WARNING: Eliminate the failure cause and enable check ping,"
+	logger -t "$NODE" "WARNING: Network interface and SMS messaging manually"
+	logger -t "$NODE" "WARNING: or reset device to defaults, for automatic setup."
+}
+
 # stand up modems
 standby_modems(){
 	i=0
@@ -100,7 +108,7 @@ modeminfo_conf(){
 smstools3_conf(){
 	uci set smstools3.$ifmodemname=modem
 	uci set smstools3.$ifmodemname.device=/dev/${SMSPORT}
-	uci set smstools3.$ifmodemname.enable=1
+	[ "$FAILED" = "--" ] && uci set smstools3.$ifmodemname.enable=1
 }
 # setting up network interface
 iface_modemmanager(){
@@ -112,12 +120,13 @@ iface_modemmanager(){
 	uci add_list network.$ifmodemname.allowedauth=none
 	uci set network.$ifmodemname.signalrate='10'
 	uci set network.$ifmodemname.metric=${mn}00
+	[ "$FAILED" = "--" ] || uci set network.$ifmodemname.disabled='1'
 }
 
 # ping check setup
 pingcontrol_setup(){
 	uci set pingcontrol.$ifmodemname=pingcontrol
-	uci set pingcontrol.$ifmodemname.enabled='1'
+	[ "$FAILED" = "--" ] && uci set pingcontrol.$ifmodemname.enabled='1'
 	uci set pingcontrol.$ifmodemname.check_period='60'
 	uci set pingcontrol.$ifmodemname.ping_silent='1'
 	uci set pingcontrol.$ifmodemname.iface=$ifmodemname
@@ -179,8 +188,7 @@ configure_uci(){
 				logger -t "$NODE" "Found family $FAMILY modem: ${VID}:${PID}"
 			}
 			[ "$FAILED" = "--" ] || {
-				logger -t "$NODE" "But modem failed \"$FAILED\" reason. Skip setup."
-				continue
+				failed_msg
 			}
 		}
 		# get APN from MCCMNC code
