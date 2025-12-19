@@ -301,7 +301,13 @@ configure_uci(){
 	} || {
 		[ -x /usr/sbin/mwan3 -a -x /usr/share/mwan3_gen.sh ] && {
 			logger -t "$NODE" "Generate config for MWAN3."
-			/usr/share/mwan3_gen.sh wan ${MWAN_IFACES:=modem} > /etc/config/mwan3
+			if  [ "$ARGSLENMODEM" -eq "1" ]; then
+				MWAN3_POLICY="default"
+			elif [ "$ARGSLENMODEM" -ge "2" ]; then
+				MWAN3_POLICY="balanced"
+			fi
+			/usr/share/mwan3_gen.sh wan -i ${MWAN_IFACES:=modem} -p $MWAN3_POLICY > /etc/config/mwan3
+			logger -t "$NODE" "MWAN3: default policy is \"$MWAN3_POLICY\""
 
 			# generate led for MWAN3
 			case $board in
