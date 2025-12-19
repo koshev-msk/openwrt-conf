@@ -4,30 +4,117 @@
 # copyright by koshev-msk 2025
 
 OFFSET_METRIC=1000
+DEFAULT_POLICY="balanced"
+LAN_INTERFACE="lan"  # default LAN interface
 
-# check args
-if [ $# -lt 1 ]; then
-    echo "Usage: $0 <interface1> [interface2] ..." >&2
+# Parse command line arguments
+INTERFACES=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -i|--interface)
+            shift
+            while [ $# -gt 0 ] && ! echo "$1" | grep -q '^-'; do
+                if [ -z "$INTERFACES" ]; then
+                    INTERFACES="$1"
+                else
+                    INTERFACES="$INTERFACES $1"
+                fi
+                shift
+            done
+            ;;
+        -p|--policy)
+            if [ $# -gt 1 ]; then
+                DEFAULT_POLICY="$2"
+                shift 2
+            else
+                echo "Error: -p requires a policy name" >&2
+                exit 1
+            fi
+            ;;
+        -l|--lan)
+            if [ $# -gt 1 ]; then
+                LAN_INTERFACE="$2"
+                shift 2
+            else
+                echo "Error: -l requires a LAN interface name" >&2
+                exit 1
+            fi
+            ;;
+        -h|--help)
+            echo "Usage: $0 -i <interface1> [interface2 ...] [-p <default_policy>] [-l <lan_interface>]"
+            echo ""
+            echo "Options:"
+            echo "  -i, --interface    WAN interfaces to configure (required, at least 2)"
+            echo "  -p, --policy       Default policy name (default: balanced)"
+            echo "  -l, --lan          LAN interface name (default: lan)"
+            echo "  -h, --help         Show this help message"
+            echo ""
+            echo "Examples:"
+            echo "  $0 -i wan1 wan2"
+            echo "  $0 -i wan1 wan2 wan3 -p 90_wan1"
+            echo "  $0 -i eth0 eth1 -p 100_eth0 -l br-lan"
+            echo "  $0 -i wwan0 wwan1 -p balanced -l lan"
+            exit 0
+            ;;
+        -*)
+            echo "Error: Unknown option: $1" >&2
+            echo "Use -h for help" >&2
+            exit 1
+            ;;
+        *)
+            # Backward compatibility: treat non-option arguments as interfaces
+            if [ -z "$INTERFACES" ]; then
+                INTERFACES="$1"
+            else
+                INTERFACES="$INTERFACES $1"
+            fi
+            shift
+            ;;
+    esac
+done
+
+# Check interfaces
+if [ -z "$INTERFACES" ]; then
+    echo "Error: No WAN interfaces specified" >&2
+    echo "Usage: $0 -i <interface1> [interface2 ...] [-p <default_policy>] [-l <lan_interface>]" >&2
     exit 1
 fi
 
-if [ $# -eq 1 ]; then
-    echo "Error: interfaces must be two or more." >&2
+# Count interfaces
+set -- $INTERFACES
+IFACE_COUNT=$#
+
+if [ $IFACE_COUNT -eq 1 ]; then
+    echo "Error: At least 2 WAN interfaces are required" >&2
     exit 1
 fi
 
-# get network address from LAN
-eval $(ipcalc.sh $(uci -q get network.lan.ipaddr) $(uci -q get network.lan.netmask))
-
-if ! [ -n ${NETWORK} -o -n ${PREFIX} ]; then
-    echo "Error: LAN interface doest not address"
+# Check LAN interface exists in network config
+if ! uci -q get network."$LAN_INTERFACE" > /dev/null; then
+    echo "Error: LAN interface '$LAN_INTERFACE' not found in network configuration" >&2
     exit 1
 fi
 
-# awk config generator
-echo "$@" | awk -v lan=${NETWORK}/${PREFIX} -v offset_metric=$OFFSET_METRIC '
+# get network address from LAN interface
+lan_ipaddr=$(uci -q get network."$LAN_INTERFACE".ipaddr)
+lan_netmask=$(uci -q get network."$LAN_INTERFACE".netmask)
+
+if [ -z "$lan_ipaddr" ] || [ -z "$lan_netmask" ]; then
+    echo "Error: LAN interface '$LAN_INTERFACE' does not have IP address or netmask configured" >&2
+    echo "Please configure IP address for $LAN_INTERFACE interface first" >&2
+    exit 1
+fi
+
+eval $(ipcalc.sh "$lan_ipaddr" "$lan_netmask")
+
+if [ -z "$NETWORK" ] || [ -z "$PREFIX" ]; then
+    echo "Error: Failed to calculate network address for $LAN_INTERFACE" >&2
+    exit 1
+fi
+
+# awk config generator - используем echo для передачи интерфейсов в awk
+echo "$INTERFACES" | awk -v lan="${NETWORK}/${PREFIX}" -v offset_metric="$OFFSET_METRIC" -v default_policy="$DEFAULT_POLICY" -v lan_interface="$LAN_INTERFACE" '
 {
-
 
     print "config globals '\''globals'\''"
     print "    option mmx_mask '\''0x3F00'\''"
@@ -38,7 +125,7 @@ echo "$@" | awk -v lan=${NETWORK}/${PREFIX} -v offset_metric=$OFFSET_METRIC '
     # iface section generate
     for (i = 1; i <= n; i++) {
 
-	off_metric = i * 100 + offset_metric
+        off_metric = i * 100 + offset_metric
 
         print "config interface '\''" $i "'\''"
         print "    option enabled '\''1'\''"
@@ -51,9 +138,9 @@ echo "$@" | awk -v lan=${NETWORK}/${PREFIX} -v offset_metric=$OFFSET_METRIC '
         print "    option interval '\''30'\''"
         print "    option down '\''3'\''"
         print "    option up '\''3'\''"
-	print "    option off_metric '\''" off_metric "'\''"
-	print "    option initial_state '\''offline'\''"
-	print "    list flush_conntrack '\''ifup'\''"
+        print "    option off_metric '\''" off_metric "'\''"
+        print "    option initial_state '\''offline'\''"
+        print "    list flush_conntrack '\''ifup'\''"
         print "    list flush_conntrack '\''ifdown'\''"
         print "    list flush_conntrack '\''connected'\''"
         print "    list flush_conntrack '\''disconnected'\''"
@@ -149,7 +236,7 @@ echo "$@" | awk -v lan=${NETWORK}/${PREFIX} -v offset_metric=$OFFSET_METRIC '
         # Only iface mode
         print "config policy '\''100_" $i "'\''"
         print "    list use_member '\''" $i "_member_balanced'\''"
-	print "    option last_resort '\''default'\''"
+        print "    option last_resort '\''default'\''"
         print ""
     }
 
@@ -162,7 +249,7 @@ echo "$@" | awk -v lan=${NETWORK}/${PREFIX} -v offset_metric=$OFFSET_METRIC '
                 print "    list use_member '\''" $j "_member_main_" i "'\''"
             }
         }
-	
+        
         print ""
     }
 
@@ -199,21 +286,25 @@ echo "$@" | awk -v lan=${NETWORK}/${PREFIX} -v offset_metric=$OFFSET_METRIC '
     }
     print ""
 
-    # LAN rule
+    # LAN rule - note: rule name is still '\''lan'\'' but uses specified LAN interface network
     print "config rule '\''lan'\''"
     print "    option family '\''ipv4'\''"
     print "    option proto '\''all'\''"
     print "    option sticky '\''0'\''"
     print "    option src_ip '\''"lan"'\''"
-    print "    option use_policy '\''balanced'\''"
+    print "    option use_policy '\''" default_policy "'\''"
     print ""
 
-    # Default rule ( future use )
+    # Default rule
+    # future use
     #print "config rule '\''default_rule'\''"
     #print "    option family '\''ipv4'\''"
     #print "    option proto '\''all'\''"
     #print "    option sticky '\''0'\''"
-    #print "    option use_policy '\''balanced'\''"
+    #print "    option use_policy '\''" default_policy "'\''"
     #print ""
+    
+    # Note: LAN interface name is available as lan_interface variable if needed
+    # print "# Generated for LAN interface: " lan_interface
 }
 '
