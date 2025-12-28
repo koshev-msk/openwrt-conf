@@ -16,8 +16,8 @@ ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="0053", ENV{.MM_USBIFNUM}=="01", SUBS
 #  ttyACM2 (if #4): GPS data port
 #  ttyACM3 (if #6): unknown
 #  ttyACM4 (if #8): unknown
-ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="0061", ENV{.MM_USBIFNUM}=="00", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
-ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="0061", ENV{.MM_USBIFNUM}=="02", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_SECONDARY}="1"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="0061", ENV{.MM_USBIFNUM}=="00", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_PPP}="1"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="0061", ENV{.MM_USBIFNUM}=="02", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
 ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="0061", ENV{.MM_USBIFNUM}=="04", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_GPS}="1"
 ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="0061", ENV{.MM_USBIFNUM}=="06", ENV{ID_MM_PORT_IGNORE}="1"
 ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="0061", ENV{.MM_USBIFNUM}=="08", ENV{ID_MM_PORT_IGNORE}="1"
@@ -68,11 +68,12 @@ ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="006F", ENV{.MM_USBIFNUM}=="02", SUBS
 ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="006F", ENV{.MM_USBIFNUM}=="04", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_GPS}="1"
 ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="006F", ENV{.MM_USBIFNUM}=="06", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_QCDM}="1"
 
+# MV31
 # T99W175
-#  ttyACM0 (if #1): AT port
-#  ttyACM1 (if #2): AT port ?
-#  ttyACM2 (if #3): can be AT or GNSS in some models
-#  ttyACM4 (if #4): DIAG/QCDM
+#  ttyUSB0 (if #1): AT port
+#  ttyUSB1 (if #2): AT port ?
+#  ttyUSB2 (if #3): can be AT or GNSS in some models
+#  ttyUSB4 (if #4): DIAG/QCDM
 ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="00b7", ENV{.MM_USBIFNUM}=="01", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
 ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="00b7", ENV{.MM_USBIFNUM}=="02", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_SECONDARY}="1"
 ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="00b7", ENV{.MM_USBIFNUM}=="03", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_GPS}="1"

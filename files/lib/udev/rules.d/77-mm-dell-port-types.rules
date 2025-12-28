@@ -8,7 +8,7 @@ GOTO="mm_dell_port_types_end"
 LABEL="mm_dell_vendorcheck"
 SUBSYSTEMS=="usb", ATTRS{bInterfaceNumber}=="?*", ENV{.MM_USBIFNUM}="$attr{bInterfaceNumber}"
 
-# Dell DW5821e (default 0x81d7, with esim support 0x81e0)
+# Dell DW5821e/DW5829e (default 0x81d7, with esim support 0x81e0)
 #  if 02: primary port
 #  if 03: secondary port
 #  if 04: raw NMEA port
