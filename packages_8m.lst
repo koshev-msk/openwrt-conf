@@ -79,6 +79,7 @@ kmod-ipt-conntrack
 kmod-ipt-core
 kmod-ipt-nat
 kmod-ipt-nat6
+kmod-ipt-tls
 kmod-ipt-offload
 kmod-ipt-nfqueue
 kmod-ipt-conntrack-extra
@@ -120,6 +121,7 @@ kmod-amneziawg
 ppp-mod-pptp
 # iptables 
 iptables-mod-ipopt
+iptables-mod-tls
 # libraries
 lib3proxy
 libustream-openssl20201210

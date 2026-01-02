@@ -105,6 +105,7 @@ kmod-usb-storage
 kmod-usb2
 kmod-usb3
 kmod-ipt-ipopt
+kmod-ipt-tls
 kmod-l2tp
 kmod-l2tp-eth
 kmod-l2tp-ip
@@ -120,6 +121,7 @@ kmod-amneziawg
 ppp-mod-pptp
 # iptables 
 iptables-mod-ipopt
+iptables-mod-tls
 # libraries
 lib3proxy
 libustream-openssl20201210
