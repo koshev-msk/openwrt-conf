@@ -72,3 +72,8 @@ error(){
 EOF
 
 echo '/etc/hotplug.d/iface/01-mm-error' >> /etc/sysupgrade.conf
+
+# disable mode setting to any in modemnanager proto
+[ -f /lib/netifd/proto/modemmanager.sh ] && {
+        sed -i '/^[[:space:]]*modemmanager_set_allowed_mode "$device" "$interface" "any"$/s/.*/\t\t:/' /lib/netifd/proto/modemmanager.sh
+}
