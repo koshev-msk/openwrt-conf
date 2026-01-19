@@ -79,4 +79,17 @@ ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="00b7", ENV{.MM_USBIFNUM}=="02", SUBS
 ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="00b7", ENV{.MM_USBIFNUM}=="03", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_GPS}="1"
 ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="00b7", ENV{.MM_USBIFNUM}=="04", ENV{ID_MM_PORT_IGNORE}="1"
 
+# MV31
+# T99W175 MBIM
+#  ttyUSB0 (if #1): AT port
+#  ttyUSB1 (if #2): AT port ?
+#  ttyUSB2 (if #3): can be AT or GNSS in some models
+#  ttyUSB4 (if #4): DIAG/QCDM
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="00b3", ENV{.MM_USBIFNUM}=="01", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="00b3", ENV{.MM_USBIFNUM}=="02", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_SECONDARY}="1"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="00b3", ENV{.MM_USBIFNUM}=="03", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_GPS}="1"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="00b3", ENV{.MM_USBIFNUM}=="04", ENV{ID_MM_PORT_IGNORE}="1"
+
 LABEL="mm_cinterion_port_types_end"
+
+
