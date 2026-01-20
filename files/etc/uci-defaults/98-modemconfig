@@ -349,6 +349,9 @@ configure_uci(){
 			/etc/init.d/mwan3 restart
 		}
 		logger -t "$NODE" "Modem interface(s) setup complete."
+		# fix mmconfig startup
+		> /etc/config/mmconfig
+		/etc/init.d/mmcomfig start
 	}
 }
 
