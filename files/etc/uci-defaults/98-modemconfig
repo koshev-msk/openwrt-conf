@@ -123,6 +123,11 @@ iface_modemmanager(){
 	[ "$FAILED" = "--" ] || uci set network.$ifmodemname.disabled='1'
 }
 
+mmconfig_setup(){
+	uci set mmconfig.$ifmodemname=modem
+	uci set mmconfig.$ifmodemname.device=$DEVICE
+}
+
 # ping check setup
 pingcontrol_setup(){
 	uci set pingcontrol.$ifmodemname=pingcontrol
@@ -236,6 +241,7 @@ configure_uci(){
 		[ "x${m}" != "x" ] && [ "$NOT_SUPPORT_MM" = "0" ] && {
 			iface_modemmanager
 			iface_mm_bearer
+			mmconfig_setup
 			pingcontrol_setup
 			uci add_list firewall.@zone[1].network=$ifmodemname
 			logger -t "$NODE" "Setting up modem interface \"$ifmodemname\" with APN: ${APN}"
@@ -349,13 +355,12 @@ configure_uci(){
 			/etc/init.d/mwan3 restart
 		}
 		logger -t "$NODE" "Modem interface(s) setup complete."
-		# fix mmconfig startup
-		> /etc/config/mmconfig
-		/etc/init.d/mmcomfig start
 	}
 }
 
 stuff(){
+	# clear mmconfig file
+	> /etc/config/mmconfig
 	standby_modems
 	configure_uci
 	uci commit
