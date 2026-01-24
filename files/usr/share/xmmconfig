@@ -44,10 +44,13 @@ xmm_uci_config(){
 }
 
 xmm_smstools_uci_config(){
-	logger -t "$NODE" "Start SMS messaging configure with port /dev/${device}"
-	echo "uci set uci set smstools3.$ifmodemname=modem"
-	echo "uci set smstools3.$ifmodemname.device=/dev/${device}"	
-	echo "uci set smstools3.$ifmodemname.enable=1"
+	SMSPORT=/dev/${device%?}$((${device: -1}+2))
+	logger -t "$NODE" "Start SMS messaging configure with port $SMSPORT"
+	uci set smstools3.$ifmodemname=modem
+	uci set smstools3.$ifmodemname.device=$SMSPORT
+	uci set smstools3.$ifmodemname.net_check='0'
+	uci set smstools3.$ifmodemname.sig_check='1'
+	[ "$FAILED" = "--" ] && uci set smstools3.$ifmodemname.enable=1
 }
 
 
@@ -86,21 +89,15 @@ get_usb_info() {
 				case ${vid}${pid} in
 					8087095a)
 						case $interface in
-							00|04)
+							00)
 								modem=$((modem+1))
 								FAMILY="Fibocom L850/L850 NCM Modem"
-								[ "$interface" = "00" ] && {
-									modem=$((modem+1))
-									ifmodemname=modem$(echo ${device} | tr -d "tty")
-									MWAN_IFACES="$MWAN_IFACES $ifmodemname"
-									# check sim card
-									check_sim
-									xmm_uci_config
-								}
-								[ "$interface" = "04" ] && {
-									ifmodemname=modem$(echo ${device} | tr -d "tty")
-									xmm_smstools_uci_config
-								}
+								ifmodemname=modem$(echo ${device} | tr -d "tty")
+								MWAN_IFACES="$MWAN_IFACES $ifmodemname"
+								# check sim card
+								check_sim
+								xmm_uci_config
+								xmm_smstools_uci_config
 							;;
 						esac
 					;;
@@ -143,7 +140,7 @@ get_usb_info() {
 stuff(){
 	default_uci_config
 	found_devices=0
-	modem=1
+	modem=0
 	for dev_base in ttyUSB ttyACM; do
 		dev_num=0
 		while true; do
