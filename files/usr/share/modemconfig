@@ -1,0 +1,313 @@
+# modem configurator via mmcli ytility
+# by koshev-msk copyright 2025
+
+# check mmcli utility
+[ -x /usr/bin/mmcli ] || exit 0
+
+RES=/usr/share/modeminfo/modem.list
+NODE=MODEMCONFIG
+
+args(){
+    echo "$#"
+}
+
+
+read_modem_list(){
+	#eval $(jsonfilter -s "$(mmcli -L -J)" -e "MODEMS=$['modem-list'][*]")
+	MODEMS=$(jsonfilter -s "$(mmcli -L -J)" -e "@['modem-list'][*]" | sort)
+}
+
+
+# atinout cmd
+atinout_cfg_nl678(){
+cat << 'EOF' >> /etc/atcommands.user
+Demo command "ATI";ATI
+NL678 - to NCM(23);AT+GTUSBMODE=23
+NL678 - to QMI(22);AT+GTUSBMODE=22
+NL678 - to QMI(17);AT+GTUSBMODE=17
+NL678 - reboot modem;AT+CFUN=1,1
+EOF
+}
+
+atinout_cfg_l850(){
+cat << 'EOF' >> /etc/atcommands.user
+Demo command "ATI";ATI
+L850 - to MBIM(7);AT+GTUSBMODE=7
+L850 - to NCM(0);AT+GTUSBMODE=0
+L850 - reboot modem;AT+CFUN=15
+EOF
+}
+
+atinout_msg(){
+	logger -t "$NODE" "WARNING: Generate atinout commands for change USB-composition"
+	logger -t "$NODE" "WARNING: Go to \"Modem\" -> \"AT Commands\" and select modem mode."
+	logger -t "$NODE" "WARNING: Select AT-port and put command to modem"
+	logger -t "$NODE" "WARNING: For autoconfig reset router to defaults."
+}
+
+
+failed_msg(){
+	logger -t "$NODE" "WARNING: But modem is failed with reason: \"${FAILED}\". Functionality is disabled."
+	logger -t "$NODE" "WARNING: Eliminate the failure cause and enable check ping,"
+	logger -t "$NODE" "WARNING: Network interface and SMS messaging manually"
+	logger -t "$NODE" "WARNING: or reset device to defaults, for automatic setup."
+}
+
+# stand up modems
+standby_modems(){
+	i=0
+	while true; do
+		! [ "$MODEMS" ] && {
+			read_modem_list
+			[ $i -gt 30 ] && {
+				exit 0
+			}
+		} || {
+			break
+		}
+		sleep 4
+		i=$(($i+1))
+	done
+}
+
+# get modem parameters
+get_modem_param(){
+	jsonfilter -s "$(mmcli -m ${m} -J)" \
+			-e "DEVICE=$['modem']['generic']['device']" \
+			-e "PORTS=$['modem']['generic']['ports'][*]" \
+			-e "OPERATOR=$['modem']['3gpp']['operator-code']" \
+			-e "FAILED=$['modem']['generic']['state-failed-reason']"
+}
+# setting up modeminfo dashboard
+modeminfo_conf(){
+	case $ATPORT in
+		*ttyUSB*|*ttyACM*)
+			uci add modeminfo modeminfo
+			uci set modeminfo.@modeminfo[-1].device=/dev/${ATPORT}
+			case $FAMILY in
+				*DELL*|*QUALCOMM*) uci set modeminfo.@modeminfo[-1].mmcli_name=1 ;;
+			esac
+		;;
+		*cdc-wdm*)
+			uci add modeminfo modeminfo
+			uci set modeminfo.@modeminfo[-1].qmi_mode=1
+			uci set modeminfo.@modeminfo[-1].qmi_proxy=1
+			uci set modeminfo.@modeminfo[-1].device_qmi=/dev/${ATPORT}
+		;;
+	esac
+}
+
+# smstools3 setup
+smstools3_conf(){
+	uci set smstools3.$ifmodemname=modem
+	uci set smstools3.$ifmodemname.device=/dev/${SMSPORT}
+	[ "$FAILED" = "--" ] && uci set smstools3.$ifmodemname.enable=1
+}
+# setting up network interface
+iface_modemmanager(){
+	uci set network.$ifmodemname=interface
+	uci set network.$ifmodemname.proto=modemmanager
+	uci set network.$ifmodemname.device=$DEVICE
+	uci set network.$ifmodemname.iptype=ipv4
+	uci set network.$ifmodemname.apn=$APN
+	uci add_list network.$ifmodemname.allowedauth=none
+	uci set network.$ifmodemname.signalrate='10'
+	uci set network.$ifmodemname.metric=${mn}00
+	[ "$FAILED" = "--" ] || uci set network.$ifmodemname.disabled='1'
+}
+
+mmconfig_setup(){
+	uci set mmconfig.$ifmodemname=modem
+	uci set mmconfig.$ifmodemname.device=$DEVICE
+}
+
+# ping check setup
+pingcontrol_setup(){
+	uci set pingcontrol.$ifmodemname=pingcontrol
+	[ "$FAILED" = "--" ] && uci set pingcontrol.$ifmodemname.enabled='1'
+	uci set pingcontrol.$ifmodemname.check_period='60'
+	uci set pingcontrol.$ifmodemname.ping_silent='1'
+	uci set pingcontrol.$ifmodemname.iface=$ifmodemname
+	uci set pingcontrol.$ifmodemname.sw_before_modres='2'
+	uci set pingcontrol.$ifmodemname.sw_before_sysres='5'
+	uci set pingcontrol.$ifmodemname.testip='dns.yandex'
+}
+
+iface_mm_bearer(){
+	# NCM/ECM mode not support bearers
+	case $VIDPID in
+		12d11*) uci set network.$ifmodemname.init_epsbearer=none ;;
+		*2cb7010a*)
+			uci set network.$ifmodemname.init_epsbearer=none
+			atinout_cfg_nl678
+			logger -t "$NODE" "WARNING: modem in NCM mode, but will work QMI. Please setup modem mode AT-command"
+			atinout_msg
+		;;
+		*8087095a*)
+			atinout_cfg_l850
+			logger -t "$NODE" "WARNING: modem in XMM mode, check modem model, if model L850 please setup modem mode AT-command"
+			atinout_msg
+		;;
+		*) uci set network.$ifmodemname.init_epsbearer=default ;;
+	esac
+}
+# run system configurator
+configure_uci(){
+	# modems in system
+	ARGSLENMODEM=$(args $MODEMS)
+	[ $ARGSLENMODEM -eq 0 ] && {
+		logger -t "$NODE" "WARNING: modems not found in system"
+		exit 0
+	}
+	# general config modeminfo
+	uci set modeminfo.@general[0]=general
+	uci set modeminfo.@general[0].index='1'
+	uci set modeminfo.@general[0].decimail='1'
+	# general config smstools3
+	uci set smstools3.@sms[0]=sms
+	uci set smstools3.@sms[0].decode_utf='1'
+	uci set smstools3.@sms[0].storage='temporary'
+	uci set smstools3.@sms[0].loglevel='5'
+	NOT_SUPPORT_MM=1
+	L850=0
+	mn=1
+	for m in $MODEMS; do
+		# enable MODEMS
+		mmcli -m ${m} -e
+		sleep 5
+		eval $(echo $(get_modem_param ) | sed -e 's/export//g')
+		# FAMILY modem. get VIDPID of modem
+		VID=$(cat ${DEVICE}/idVendor)
+		PID=$(cat ${DEVICE}/idProduct)
+		VIDPID="${VID}${PID}"
+		[ -r ${RES} ] && {
+			[ "$VID" -a "$PID" ] && {
+				FAMILY=$(awk -F [\;] '/'$VIDPID'/{print toupper($2)}' $RES)
+				logger -t "$NODE" "Found family $FAMILY modem: ${VID}:${PID}"
+			}
+			[ "$FAILED" = "--" ] || {
+				failed_msg
+			}
+		}
+		# get APN from MCCMNC code
+		case $OPERATOR in
+			25001) APN=internet.mts.ru ;;
+			25011) APN=internet.yota ;;
+			25020) APN=internet.tele2.ru ;;
+			25099) APN=internet.beeline.ru ;;
+			*) APN=internet ;;
+		esac
+
+		[ "$ARGSLENMODEM" -eq "1" ] && {
+			ifmodemname=modem
+		} || {
+			ifmodemname=modem${mn}
+		}
+		# check unsupported modems
+		[ "x${VIDPID}" != "x" ] && {
+			case $VIDPID in
+				8087095a|2c7c6000|2c7c6026|\
+				12864e3c|19d20532|305a1415|\
+				0e8d7126|0e8d7127|2cd20001|\
+				2cd20004|19d21404|19d21424)
+					continue
+				;;
+				# fix L850 modem
+				2cb70007)
+					L850=1
+					NOT_SUPPORT_MM=0
+				;;
+				*)
+					NOT_SUPPORT_MM=0
+				;;
+			esac
+		} || {
+			NOT_SUPPORT_MM=1
+		}
+		# check modems if have one AT port
+		case $FAMILY in
+			SIERRA|THALES) ATPORT=$(echo "$PORTS" | awk '{for (i=1; i<=NF; i++) if($i ~ /cdc-wdm/) {print $i; exit}}') ;;
+			*) ATPORT=$(echo "$PORTS" | awk '{ for (i=1; i<=NF; i++) { if ($(i+1) == "(at)") { print $i; break; }}}') ;;
+		esac
+
+		# set uci network and ping check
+		[ "x${m}" != "x" ] && [ "$NOT_SUPPORT_MM" = "0" ] && {
+			iface_modemmanager
+			iface_mm_bearer
+			mmconfig_setup
+			pingcontrol_setup
+			uci add_list firewall.@zone[1].network=$ifmodemname
+			logger -t "$NODE" "Setting up modem interface \"$ifmodemname\" with APN: ${APN}"
+		} || {
+			logger -t "$NODE" "WARNING: modem: ${VID}:${PID} not supported by modemmanager."
+			logger -t "$NODE" "WARNING: Please manualy configure interface."
+		}
+		# setting up modeminfo and smstools3
+		! [ "$ATPORT" = "" ] && {
+			modeminfo_conf
+			case $ATPORT in
+				ttyUSB*)
+					SMSPORT=${ATPORT%?}$((${ATPORT: -1}+1))
+					smstools3_conf
+					case $VIDPID in
+						2cb70104|2cb70109)
+							uci set smstools3.$ifmodemname.net_check='0'
+							uci set smstools3.$ifmodemname.sig_check='1'
+						;;
+					esac
+				;;
+				ttyACM*)
+					SMSPORT=${ATPORT%?}$((${ATPORT: -1}+2))
+					smstools3_conf
+					uci set smstools3.$ifmodemname.net_check='0'
+					uci set smstools3.$ifmodemname.sig_check='1'
+				;;
+			esac
+		}
+		mn=$(($mn+1))
+		MWAN_IFACES="$MWAN_IFACES $ifmodemname"
+		unset ATPORT FAMILY
+	done
+
+	[ ! -n "$SMSPORT" -a "$NOT_SUPPORT_MM" = "0" ] && {
+		for i in smstools3 luci-sms; do
+			for a in stop disable; do
+				/etc/init.d/${i} ${a}
+			done
+		done
+		logger -t "$NODE" "WARNING: Any installed modems no have two or more AT-ports"
+		logger -t "$NODE" "WARNING: SMS messaging funcionality disabled."
+		logger -t "$NODE" "WARNING: Please manually configure service."
+	}
+	[ "$L850" = "0" ] && {
+		[ -x /etc/init.d/fixmodem ] && {
+			/etc/init.d/fixmodem disable
+		}
+	}
+
+	[ "$NOT_SUPPORT_MM" = "1" ] && {
+		logger -t "$NODE" "WARNING: Any installed modems not supported by autoconfiguration."
+		logger -t "$NODE" "WARNING: Mobile services is stopped."
+		logger -t "$NODE" "WARNING: Please manually configure it."
+		for i in smstools3 luci-sms modemmanager; do
+			for a in stop disable; do
+				/etc/init.d/${i} ${a}
+			done
+		done
+		atinout_cfg_l850
+		atinout_cfg_nl678
+		atinout_msg
+	} || {
+		logger -t "$NODE" "Modem interface(s) setup complete."
+	}
+}
+
+stuff(){
+	# clear mmconfig file
+	> /etc/config/mmconfig
+	standby_modems
+	configure_uci
+	uci commit
+	reload_config
+}
+

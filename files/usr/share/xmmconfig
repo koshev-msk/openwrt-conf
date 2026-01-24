@@ -1,0 +1,172 @@
+# configurator via xmm proto for Fibocom FM350-GL/L860-GL
+# by koshev-msk copyright 2026
+
+NODE="XMMCONFIG"
+
+
+default_uci_config(){
+	# general config modeminfo
+	uci set modeminfo.@general[0]=general
+	uci set modeminfo.@general[0].index='1'
+	uci set modeminfo.@general[0].decimail='1'
+	# general config smstools3
+	uci set smstools3.@sms[0]=sms
+	uci set smstools3.@sms[0].decode_utf='1'
+	uci set smstools3.@sms[0].storage='temporary'
+	uci set smstools3.@sms[0].loglevel='5'
+}
+
+xmm_uci_config(){
+	logger -t "$NODE" "Found device $FAMILY (${vid}:${pid}) with port /dev/${device} ($interface)"
+	uci set network.$ifmodemname=interface
+	uci set network.$ifmodemname.proto=xmm
+	uci set network.$ifmodemname.device=/dev/${device}
+	uci set network.$ifmodemname.apn=internet
+	uci set network.$ifmodemname.metric=$((${modem}00+100))
+	[ "$FAILED" = "--" ] || uci set network.$ifmodemname.disabled='1'
+	uci add_list firewall.@zone[1].network=$ifmodemname
+	uci add modeminfo modeminfo
+	uci set modeminfo.@modeminfo[-1].device=/dev/${device}
+	uci set pingcontrol.$ifmodemname=pingcontrol
+	[ "$FAILED" = "--" ] && uci set pingcontrol.$ifmodemname.enabled='1'
+	uci set pingcontrol.$ifmodemname.check_period='60'
+	uci set pingcontrol.$ifmodemname.ping_silent='1'
+	uci set pingcontrol.$ifmodemname.iface=$ifmodemname
+	uci set pingcontrol.$ifmodemname.sw_before_modres='2'
+	uci set pingcontrol.$ifmodemname.sw_before_sysres='5'
+	uci set pingcontrol.$ifmodemname.testip='dns.yandex'
+	uci commit network
+	uci commit firewall
+	uci commit modeminfo
+	uci commit pingcontrol
+	sleep 3
+	ifup $ifmodemname
+}
+
+xmm_smstools_uci_config(){
+	logger -t "$NODE" "Start SMS messaging configure with port /dev/${device}"
+	echo "uci set uci set smstools3.$ifmodemname=modem"
+	echo "uci set smstools3.$ifmodemname.device=/dev/${device}"	
+	echo "uci set smstools3.$ifmodemname.enable=1"
+}
+
+
+check_sim(){
+	gcom -d /dev/${device} -s /etc/gcom/setpin.gcom > /dev/null 2>&1 && FAILED="--" || FAILED=OK
+}
+
+get_usb_info() {
+	device="$1"
+	if [ -e "/sys/class/tty/${device}" ]; then
+		tty_path=$(readlink -f "/sys/class/tty/${device}" 2>/dev/null)
+        	interface_path=""
+		current_path="$tty_path"
+
+		while [ -n "$current_path" ] && [ "$current_path" != "/" ]; do
+			if [ -f "${current_path}/bInterfaceNumber" ]; then
+				interface_path="$current_path"
+				break
+			fi
+			current_path=$(dirname "$current_path")
+		done
+        
+		if [ -n "$interface_path" ]; then
+			usb_device_path=$(dirname "$interface_path")
+			while [ -n "$usb_device_path" ] && [ "$usb_device_path" != "/" ]; do
+				if [ -f "${usb_device_path}/idVendor" ] && [ -f "${usb_device_path}/idProduct" ]; then
+					break
+				fi
+				usb_device_path=$(dirname "$usb_device_path")
+			done
+            
+			if [ -n "$usb_device_path" ] && [ "$usb_device_path" != "/" ]; then
+				vid=$(cat "${usb_device_path}/idVendor" 2>/dev/null)
+				pid=$(cat "${usb_device_path}/idProduct" 2>/dev/null)
+				interface=$(cat "${interface_path}/bInterfaceNumber" 2>/dev/null)
+				case ${vid}${pid} in
+					8087095a)
+						case $interface in
+							00|04)
+								modem=$((modem+1))
+								FAMILY="Fibocom L850/L850 NCM Modem"
+								[ "$interface" = "00" ] && {
+									modem=$((modem+1))
+									ifmodemname=modem$(echo ${device} | tr -d "tty")
+									MWAN_IFACES="$MWAN_IFACES $ifmodemname"
+									# check sim card
+									check_sim
+									xmm_uci_config
+								}
+								[ "$interface" = "04" ] && {
+									ifmodemname=modem$(echo ${device} | tr -d "tty")
+									xmm_smstools_uci_config
+								}
+							;;
+						esac
+					;;
+					0e8d7126)
+						FAMILY="Fibocom FM350 NCM Modem"
+						case $interface in
+							04)
+								modem=$((modem+1))
+								ifmodemname=modem$(echo ${device} | tr -d "tty")
+								# check sim card
+								check_sim
+								xmm_uci_config
+								MWAN_IFACES="$MWAN_IFACES $ifmodemname"
+							;;
+						esac
+					;;
+					0e8d7127)
+						FAMILY="Fibocom FM350 NCM Modem"
+						case $interface in
+							06)
+								modem=$((modem+1))
+								ifmodemname=modem$(echo ${device} | tr -d "tty")
+								# check sim card
+								check_sim
+								xmm_uci_config
+								MWAN_IFACES="$MWAN_IFACES $ifmodemname"
+							;;
+						esac
+					;;
+					*) logger -t "$NODE" "XMM Modems not detected!" ;;
+				esac
+				return 0
+			fi
+		fi
+	fi
+	return 1
+}
+
+
+stuff(){
+	default_uci_config
+	found_devices=0
+	modem=1
+	for dev_base in ttyUSB ttyACM; do
+		dev_num=0
+		while true; do
+			dev="/dev/${dev_base}${dev_num}"
+			if [ -e "$dev" ]; then
+				device_name="${dev_base}${dev_num}"
+				if get_usb_info "$device_name"; then
+					found_devices=$((found_devices + 1))
+				fi
+				dev_num=$((dev_num + 1))
+			else
+       			        if [ $dev_num -eq 0 ]; then
+					for alt_dev in "/dev/${dev_base}"*; do
+						if [ -e "$alt_dev" ] && [ "$alt_dev" != "/dev/${dev_base}*" ]; then
+							device_name=$(basename "$alt_dev2")
+							if get_usb_info "$device_name"; then
+								found_devices=$((found_devices + 1))
+							fi
+						fi
+					done
+				fi
+				break
+			fi
+		done
+	done
+}

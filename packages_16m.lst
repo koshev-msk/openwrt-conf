@@ -8,7 +8,7 @@ luci-app-sqm
 luci-app-atinout
 luci-app-3proxy
 luci-app-openvpn
-luci-app-https-dns-proxy
+#luci-app-https-dns-proxy
 luci-app-mwan3
 luci-app-mwan3-ledhelper
 luci-app-ota
