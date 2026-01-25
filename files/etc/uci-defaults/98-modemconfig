@@ -7,8 +7,8 @@
 # Check modemmanager modems found
 
 mmcheck(){
-	MODEMS=$(mmcli -L)
-	[ "$MODEMS" = "No modems were found" ] && {
+	detectmm=$(mmcli -L)
+	[ "$detectmm" = "No modems were found" ] && {
 		. /usr/share/xmmconfig
 		for m in stop disable; do
 			/etc/init.d/modemmanager ${m}
