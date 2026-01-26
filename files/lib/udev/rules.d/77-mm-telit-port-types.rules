@@ -154,6 +154,18 @@ ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1900", ENV{.MM_USBIFNUM}=="02", ENV{
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1900", ENV{.MM_USBIFNUM}=="03", ENV{ID_MM_PORT_IGNORE}="1"
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1900", ENV{.MM_USBIFNUM}=="04", ENV{ID_MM_PORT_IGNORE}="1"
 
+# LN960 QMI
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1910", ENV{.MM_USBIFNUM}=="02", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1910", ENV{.MM_USBIFNUM}=="03", ENV{ID_MM_PORT_IGNORE}="1"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1910", ENV{.MM_USBIFNUM}=="04", ENV{ID_MM_PORT_IGNORE}="1"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1910", ENV{.MM_USBIFNUM}=="05", ENV{ID_MM_PORT_TYPE_QCDM}="1"
+
+# LN960 MBIM
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1911", ENV{.MM_USBIFNUM}=="00", ENV{ID_MM_PORT_TYPE_QCDM}="1"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1911", ENV{.MM_USBIFNUM}=="02", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1911", ENV{.MM_USBIFNUM}=="03", ENV{ID_MM_PORT_IGNORE}="1"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1911", ENV{.MM_USBIFNUM}=="04", ENV{ID_MM_PORT_IGNORE}="1"
+
 # LM940/960 initial port delay
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1040", ENV{ID_MM_TTY_AT_PROBE_TRIES}="14"
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1041", ENV{ID_MM_TTY_AT_PROBE_TRIES}="14"
