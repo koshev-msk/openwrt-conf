@@ -1,0 +1,53 @@
+#!/bin/sh
+# Simple converter IMEI to TBCD for Telit modems nvram format
+# by koshev-msk 2026
+
+awk -v script_name="$(basename "$0")" '
+function check_luhn(imei, i, sum, digit, double_digit) {
+	sum = 0                    
+	for (i = 1; i <= 14; i++) {       
+		digit = substr(imei, i, 1)
+		if (i % 2 == 0) {               
+			double_digit = digit * 2
+			if (double_digit > 9) {                
+				double_digit = double_digit - 9
+			}                  
+			sum += double_digit
+		} else {            
+			sum += digit
+		}
+	}                                 
+	check_digit = substr(imei, 15, 1)     
+	return ((sum + check_digit) % 10 == 0)
+}
+
+BEGIN {
+	if (ARGC > 1) {
+		imei = ARGV[1]
+		ARGC = 1
+
+		if ( length(imei) == 15 && imei ~ /^[0-9]+$/ && check_luhn(imei)) {
+
+			encoded = "80A" imei
+
+			result = ""
+			for (i = 1; i <= length(encoded); i += 2) {
+				first = substr(encoded, i, 1)
+				second = substr(encoded, i+1, 1)
+				swapped = second first
+				dec = sprintf("%d", "0x" swapped)
+				hex_out = sprintf("%02X", dec)
+				result = result hex_out ","
+			}
+
+			print substr(result, 1, length(result)-1)
+		} else {
+			print "ERROR: this value is not correct IMEI"
+			exit 1
+		}
+	} else {
+		print "Usage: " script_name " IMEI"
+		print "Example: " script_name " 353990821092348"
+	}
+}
+' "$@"
