@@ -20,6 +20,7 @@ mmcheck(){
 
 board="$(cat /tmp/sysinfo/board_name)"
 
+# generate config for MWAN3
 setup_mwan3(){
 		[ -x /usr/sbin/mwan3 -a -x /usr/share/mwan3_gen.sh ] && {
 			logger -t "$NODE" "Generate config for MWAN3."
@@ -29,8 +30,6 @@ setup_mwan3(){
 			elif [ "$MODEMLEN" -ge "2" ]; then
 				MWAN3_POLICY="balanced"
 			fi
-			/usr/share/mwan3_gen.sh wan -i ${MWAN_IFACES:=modem} -p $MWAN3_POLICY > /etc/config/mwan3
-			logger -t "$NODE" "MWAN3: default policy is \"$MWAN3_POLICY\""
 
 			# generate led for MWAN3
 			case $board in
@@ -45,9 +44,12 @@ setup_mwan3(){
 				huastlink,hc-g60)
 					LEDS="-l blue:status -o green:status"
 				;;
-				zbtlink,zbt-wg2107|\
+				zbtlink,zbt-wg2107)
+					LEDS="-l green:wwan1 green:wwan2"
+				;;
 				zbtlink,zbt-cpe2801-32m)
 					LEDS="-l green:wwan1 green:wwan2"
+					PORT_WAN=0
 				;;
 				zbtlink,zbt-z8102ax-nand|\
 				zbtlink,zbt-z8102ax-nand-all|\
@@ -63,12 +65,16 @@ setup_mwan3(){
 				;;
 				*) LEDS="false" ;;
 			esac
+
+			[ "$PORT_WAN" = "0" ] || MWAN_IFACES="wan $MWAN_IFACES"
+			 /usr/share/mwan3_gen.sh -i ${MWAN_IFACES:=modem} -p $MWAN3_POLICY > /etc/config/mwan3
+
 			[ "$LEDS" != "false" -a -x /usr/share/mwan3_led_config.sh ] && {
 				/usr/share/mwan3_led_config.sh -i ${MWAN_IFACES:=modem} ${LEDS} > /etc/config/mwan3_led
 			} || {
 				> /etc/config/mwan3_led
 			}
-
+			logger -t "$NODE" "MWAN3: default policy is \"$MWAN3_POLICY\". Restart service to take effect."
 			/etc/init.d/mwan3 restart
 		}
 }

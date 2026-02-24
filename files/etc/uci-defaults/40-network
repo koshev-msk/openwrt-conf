@@ -47,7 +47,22 @@ setup_macs(){
         esac
 }
 
+setup_iface(){
+	local board="$1"
+	case $board in
+		zbtlink,zbt-cpe2801-16m|\
+		zbtlink,zbt-cpe2801-32m)
+			# Assign WAN port to LAN
+			uci del network.wan
+			uci del network.@switch_vlan[1]
+			uci set network.@device[0].ports='eth0.1'
+			uci set network.@switch_vlan[0].ports='3 4 6t'
+		;;
+	esac
+}
+
 setup_macs $board
+setup_iface $board
 uci commit network
 uci commit dhcp
 
