@@ -74,14 +74,15 @@ setup_mwan3(){
 				*) LEDS="false" ;;
 			esac
 
-			[ "$PORT_WAN" = "0" ] || MWAN_IFACES="wan $MWAN_IFACES"
-			 /usr/share/mwan3_gen.sh -i ${MWAN_IFACES:=modem} -p $MWAN3_POLICY > /etc/config/mwan3
-
 			[ "$LEDS" != "false" -a -x /usr/share/mwan3_led_config.sh ] && {
 				/usr/share/mwan3_led_config.sh -i ${MWAN_IFACES:=modem} ${LEDS} > /etc/config/mwan3_led
 			} || {
 				> /etc/config/mwan3_led
 			}
+
+			[ "$PORT_WAN" = "0" ] || MWAN_IFACES="wan $MWAN_IFACES"
+			/usr/share/mwan3_gen.sh -i ${MWAN_IFACES:=modem} -p $MWAN3_POLICY > /etc/config/mwan3
+
 			logger -t "$NODE" "MWAN3: default policy is \"$MWAN3_POLICY\". Restart service to take effect."
 			/etc/init.d/mwan3 restart
 		}
