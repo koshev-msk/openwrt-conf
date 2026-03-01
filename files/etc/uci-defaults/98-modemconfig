@@ -4,21 +4,29 @@
 [ -f /etc/.config.lock ] && exit 0
 
 
+board="$(cat /tmp/sysinfo/board_name)"
+
 # Check modemmanager modems found
 
 mmcheck(){
-	detectmm=$(mmcli -L)
-	[ "$detectmm" = "No modems were found" ] && {
-		. /usr/share/xmmconfig
-		for m in stop disable; do
-			/etc/init.d/modemmanager ${m}
-		done
-	} || {
-		. /usr/share/modemconfig
-	}
+	case $board in
+		b4com,mcr100|\
+		b4com,mcr200)
+			. /usr/share/qmiconfig
+		;;
+		*)
+			detectmm=$(mmcli -L)
+			[ "$detectmm" = "No modems were found" ] && {
+				. /usr/share/xmmconfig
+				for m in stop disable; do
+					/etc/init.d/modemmanager ${m}
+				done
+			} || {
+				. /usr/share/modemconfig
+			}
+		;;
+	esac
 }
-
-board="$(cat /tmp/sysinfo/board_name)"
 
 # generate config for MWAN3
 setup_mwan3(){
@@ -85,6 +93,8 @@ do_run(){
 	sleep 5
 	stuff
 	sleep 30
+	uci commit
+	reload_config
 	setup_mwan3
 }
 	

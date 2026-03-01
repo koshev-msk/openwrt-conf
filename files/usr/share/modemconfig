@@ -307,7 +307,5 @@ stuff(){
 	> /etc/config/mmconfig
 	standby_modems
 	configure_uci
-	uci commit
-	reload_config
 }
 

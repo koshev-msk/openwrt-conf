@@ -1,0 +1,223 @@
+# configurator via uqmi proto for Qualcomm MSM Interface
+# by koshev-msk copyright 2026
+
+RES=/usr/share/modeminfo/modem.list
+NODE=QMICONFIG
+
+# Agrs legn
+args(){
+    echo "$#"
+}
+
+default_setup(){
+	# general config modeminfo
+	uci set modeminfo.@general[0]=general
+	uci set modeminfo.@general[0].index='1'
+	uci set modeminfo.@general[0].decimail='1'
+	# general config smstools3
+	uci set smstools3.@sms[0]=sms
+	uci set smstools3.@sms[0].decode_utf='1'
+	uci set smstools3.@sms[0].storage='temporary'
+	uci set smstools3.@sms[0].loglevel='5'
+}
+
+# setup QMI interface
+modem_iface_setup(){
+	uci set network.$ifmodemname=interface
+	uci set network.$ifmodemname.proto=qmi
+	uci set network.$ifmodemname.device=$DEVICE
+	uci set network.$ifmodemname.iptype=ipv4
+	uci set network.$ifmodemname.apn=$APN
+	uci set network.$ifmodemname.metric=${mn}00
+	[ "$SIM" = "ready" ] || uci set network.$ifmodemname.disabled='1'
+	uci add_list firewall.@zone[1].network=$ifmodemname
+}
+
+
+# setup modeminfo
+modeminfo_setup(){
+	case $ATPORT in
+		*ttyUSB*|*ttyACM*)
+			uci add modeminfo modeminfo
+			uci set modeminfo.@modeminfo[-1].device=/dev/${ATPORT}
+			case $FAMILY in
+				*DELL*|*QUALCOMM*) uci set modeminfo.@modeminfo[-1].mmcli_name=1 ;;
+			esac
+		;;
+		*cdc-wdm*)
+			uci add modeminfo modeminfo
+			uci set modeminfo.@modeminfo[-1].qmi_mode=1
+			uci set modeminfo.@modeminfo[-1].qmi_proxy=1
+			uci set modeminfo.@modeminfo[-1].device_qmi=/dev/${ATPORT}
+		;;
+	esac
+}
+
+# Setup pingcontrol
+pingcontrol_setup(){
+	uci set pingcontrol.$ifmodemname=pingcontrol
+	[ "$SIM" = "ready" ] && uci set pingcontrol.$ifmodemname.enabled='1'
+	uci set pingcontrol.$ifmodemname.check_period='60'
+	uci set pingcontrol.$ifmodemname.ping_silent='1'
+	uci set pingcontrol.$ifmodemname.iface=$ifmodemname
+	uci set pingcontrol.$ifmodemname.sw_before_modres='2'
+	uci set pingcontrol.$ifmodemname.sw_before_sysres='5'
+	uci set pingcontrol.$ifmodemname.testip='dns.yandex'
+}
+
+
+# Setup SMSTOOLS3
+smstools3_setup(){
+	uci set smstools3.$ifmodemname=modem
+	uci set smstools3.$ifmodemname.device=/dev/${SMSPORT}
+	[ "$SIM" = "ready" ] && uci set smstools3.$ifmodemname.enable=1
+}
+
+# Check modemmanager and status on bus
+check_mm(){
+	[ -x /usr/bin/mmcli ] && {
+		STATUS=$(/etc/init.d/modemmanager status > /dev/null 2>&1 && echo $?)
+		case $STATUS in
+			0)
+				for a in stop disable; do
+					/etc/init.d/modemmanager $a
+				done
+			;;
+		esac
+	}			
+}
+
+get_at_port(){
+	PORTS=$(ls $(readlink -f /sys/class/usbmisc/${d}/../../../)/*:*/bInterfaceNumber)
+	for i in $PORTS; do                                         
+		BNUM=$(cat $i)                                         
+		case $BNUM in                                           
+			$IFACE_NUM)                                            
+				ATPORT=$(ls -1 ${i%/*}/ | grep tty )   
+				SMSPORT=${ATPORT%?}$((${ATPORT: -1}+1))
+			;;                                             
+		esac                                                   
+	done
+}
+
+qmi_ports(){
+	FAMILY=$1
+	case $FAMILY in
+		QUECTEL) IFACE_NUM=02 ;;
+		DELL) IFACE_NUM=02 ;;
+		MEIGLINK) IFACE_NUM=01 ;;
+		FIBOCOM)
+			case $PID in
+				104) IFACE_NUM=01 ;;
+				109) IFACE_NUM=00 ;;
+			esac
+		;;
+		*)
+			logger -t "${NODE}" "Modem family not supported"
+			exit 1
+		;;
+	esac
+}
+
+serving_modem(){
+	SERVING=$1
+	jsonfilter -s "$SERVING" \
+		-e "MCC=$['plmn_mcc']" \
+		-e "MNC=$['plmn_mnc']" \
+		-e "DESC=$['plmn_description']"
+}
+
+# find qmi devices
+qmi_device(){
+	CDC_WDM_DEV=$(ls /sys/class/usbmisc/)
+	ARGSLENMODEM=$(args $CDC_WDM_DEV)
+	mn=1
+
+	[ "$ARGSLENMODEM" -eq "0" ] && {
+		logger -t "$NODE" "WARNING: modems not found in system"
+		exit 1
+	} || {
+		default_setup
+	}
+	
+	for d in $CDC_WDM_DEV; do
+
+		[ "$ARGSLENMODEM" -eq "1" ] && {
+			ifmodemname=modem
+		} || {
+			ifmodemname=modem${mn}
+		}
+
+		case $d in
+			cdc-wdm*)
+				# is QMI device?
+				ls $(readlink -f /sys/class/usbmisc/${d}/../../driver/module/drivers/) | grep -i qmi > /dev/null 2>&1
+				case $? in
+					0)	# Yes
+						VID=$(cat $(readlink -f /sys/class/usbmisc/${d}/../../../idVendor))
+						PID=$(cat $(readlink -f /sys/class/usbmisc/${d}/../../../idProduct))
+						mn=$(($mn+1))
+						DEVICE=/dev/${d}
+						# Get modem family
+						[ -r ${RES} ] && {
+							[ "$VID" -a "$PID" ] && {
+								FAMILY=$(awk -F [\;] '/'${VID}${PID}'/{print toupper($2)}' $RES)
+								logger -t "$NODE" "Found family $FAMILY modem: ${VID}:${PID}"
+								qmi_ports $FAMILY
+								logger -t "$NODE" "Setting up services for $ifmodemname:"
+								get_at_port
+								logger -t "$NODE" "Data: ${DEVICE}"
+								logger -t "$NODE" "Metric: /dev/${ATPORT}"
+								logger -t "$NODE" "SMS: /dev/${SMSPORT}"
+								SIM=$(uqmi -d ${DEVICE} --uim-get-sim-state | jsonfilter -e '@["card_application_state"]')
+								[ $SIM = "ready" ] || {
+									logger -t "$NODE" "WARNING: $ifmodemname SIM is missing. Disabled next services:"
+									logger -t "$NODE" "- Bring up boot modem interface."
+									logger -t "$NODE" "- SMS messaging."
+									logger -t "$NODE" "- Ping alive link."
+									logger -t "$NODE" "Plese setting up it manually after clearing SIM error reason."
+								}
+								SERVING="$(uqmi -d ${DEVICE} --get-serving-system)"
+								eval $(serving_modem "$SERVING")
+								case $MCC in
+									250)
+										case $MNC in
+											1) APN=internet.mts.ru ;;
+											11) APN=internet.yota ;;
+											20) APN=internet.tele2.ru ;;
+											99) APN=internet.beeline.ru ;;
+											*) APN=internet ;;
+										esac
+									;;
+									*) APN=internet ;;
+								esac
+								# Setting up UCI
+								modem_iface_setup
+								modeminfo_setup
+								pingcontrol_setup
+								smstools3_setup
+								
+						
+							}
+						}
+						MWAN_IFACES="$MWAN_IFACES $ifmodemname"
+						unset ATPORT FAMILY VID PID
+					;;
+					*) logger -t "$NODE" "Device /dev/${d} is not QMI. Skip." ;;
+				esac
+			;;
+		esac
+	done
+}
+
+
+stuff(){
+	[ -x /sbin/uqmi ] || {
+		logger -t "$NODE" "WARNING: UQMI not found in system!"
+		exit 1
+	}
+	check_mm
+	sleep 10
+	qmi_device
+}
+

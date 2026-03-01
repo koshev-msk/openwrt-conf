@@ -147,6 +147,14 @@ echo "/etc/hotplug.d/button/00-button" >> /etc/sysupgrade.conf
 MACHINE=$(awk '{print $2}' /sys/firmware/devicetree/base/model)
 
 case $board in
+	b4com,mcr100)
+		restart_modem gpio10 gpio13
+		uci set system.modem2.value='1'
+	;;
+	b4com,mcr200)
+		restart modem gpio140 gpio141
+		uci set system.modem2.value='1'
+	;;
 	hooolink,hl-wr832v1)
 		restart_modem gpio512
 	;;
