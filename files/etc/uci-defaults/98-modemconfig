@@ -59,11 +59,14 @@ setup_mwan3(){
 					LEDS="-l green:wwan1 green:wwan2"
 					PORT_WAN=0
 				;;
-				zbtlink,zbt-z8102ax-nand|\
+				zbtlink,zbt-z8102ax-nand-64m|\
 				zbtlink,zbt-z8102ax-nand-all|\
+				zbtlink,zbt-z8102ax-v2|\
 				zbtlink,zbt-z8102ax-emmc)
 					LEDS="-l blue:usb-0 blue:usb-1"
 				;;
+				zbtlink,zbt-z8109ax-nand-64m|\
+				zbtlink,zbt-z8109ax-nand-128m|\
 				zbtlink,zbt-z8109ax-nand-all)
 					LEDS="-l green:modem1 green:modem2 green:modem3 green:modem4"
 				;;

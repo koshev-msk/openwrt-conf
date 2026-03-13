@@ -29,6 +29,17 @@ untrusted comment: public key 62705f7e940c2737
 RWRicF9+lAwnN+JSxJwzpTJAAVHOBCbXgixOt2lLKZM4vhq42tMShgmc
 EOF
 		echo "src/gz modemfeed http://openwrt.132lan.ru/packages/${DISTRIB_RELEASE%.*}/packages/${DISTRIB_ARCH}/modemfeed" >> /etc/opkg/customfeeds.conf
+		# Add passwall2 repo
+		FILE=/etc/opkg/keys/passwall
+cat << 'EOF' > $FILE
+untrusted comment: OpenWRT usign key of dianlujitao
+RWQKvaZaSStIhx4t06ISyV42CIpK7niKfR+Yro/WHiKLa122SEh2j3Z4
+EOF
+		for feed in passwall_packages passwall2; do
+			echo "src/gz $feed https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-${DISTRIB_RELEASE%.*}/${DISTRIB_ARCH}/$feed" >> /etc/opkg/customfeeds.conf
+		done
+
+
 	;;
 esac
 

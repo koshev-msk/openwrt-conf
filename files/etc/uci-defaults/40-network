@@ -36,6 +36,8 @@ setup_macs(){
 			uci set network.@device[-1].name=wwan
 			uci set network.@device[-1].macaddr="$(macaddr_add $label_mac 5)"
 		;;
+		zbtlink,zbt-z8109ax-nand-64m|\
+		zbtlink,zbt-z8109ax-nand-128m|\
                 zbtlink,zbt-z8109ax-nand-all)
                         label_mac=$(mtd_get_mac_binary "Factory" 0x4)
 			for c in 0 1; do

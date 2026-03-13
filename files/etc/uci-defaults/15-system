@@ -166,14 +166,17 @@ case $board in
 	huastlink,hc-g60)
 		restart_modem modem
 	;;
-	zbtlink,zbt-z8102ax-nand|\
+	zbtlink,zbt-z8102ax-nand-64m|\
 	zbtlink,zbt-z8102ax-nand-all|\
+	zbtlink,zbt-z8102ax-v2|\
 	zbtlink,zbt-z8102ax-emmc)
 		restart_modem 5g1 5g2
 		fixmodems 5g1 5g2
 		button_modem_restart BTN_0
 	;;
 	huastlink,hc-g90|\
+	zbtlink,zbt-z8109ax-nand-64m|\
+	zbtlink,zbt-z8109ax-nand-128m|\
 	zbtlink,zbt-z8109ax-nand-all)
 		restart_modem modem1 modem2 modem3 modem4
 		fixmodems modem1 modem2 modem3 modem4
@@ -218,7 +221,6 @@ case $board in
 	;;
 	mikrotik,mikrotik_routerboard-m11g|\
 	hilink,rm20-nand)
-		continue
 	;;
 	vertell,m2-router)
 		restart_modem modem
