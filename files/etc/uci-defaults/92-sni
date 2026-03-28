@@ -5,18 +5,18 @@
 set_config(){
 uci batch << EOF
 set youtubeUnblock.@section[0].name='YouTube'
-del youtubeUnblock.[0].frag_sni_reverse
-del youtubeUnblock.[0].frag_sni_faked
-del youtubeUnblock.[0].frag_middle_sni
-del youtubeUnblock.[0].frag_sni_pos
-del youtubeUnblock.[0].fk_winsize
-set youtubeUnblock.[0].fake_sni='1'
-set youtubeUnblock.[0].faking_strategy='tcp_check'
-set youtubeUnblock.[0].fake_sni_seq_len='5'
-set youtubeUnblock.[0].fake_sni_type='random'
-set youtubeUnblock.[0].frag='none'
-set youtubeUnblock.[0].seg2delay='5'
-set youtubeUnblock.[0].udp_stun_filter='0'
+del youtubeUnblock.@section[0].frag_sni_reverse
+del youtubeUnblock.@section[0].frag_sni_faked
+del youtubeUnblock.@section[0].frag_middle_sni
+del youtubeUnblock.@section[0].frag_sni_pos
+del youtubeUnblock.@section[0].fk_winsize
+set youtubeUnblock.@section[0].fake_sni='1'
+set youtubeUnblock.@section[0].faking_strategy='tcp_check'
+set youtubeUnblock.@section[0].fake_sni_seq_len='5'
+set youtubeUnblock.@section[0].fake_sni_type='random'
+set youtubeUnblock.@section[0].frag='none'
+set youtubeUnblock.@section[0].seg2delay='5'
+set youtubeUnblock.@section[0].udp_stun_filter='0'
 add youtubeUnblock section
 set youtubeUnblock.@section[-1].name='CallsWhatsAppTelegram'
 set youtubeUnblock.@section[-1].tls_enabled='0'

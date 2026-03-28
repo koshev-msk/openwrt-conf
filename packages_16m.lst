@@ -7,11 +7,11 @@ luci-app-pingcontrol
 luci-app-sqm
 luci-app-atinout
 luci-app-3proxy
-luci-app-openvpn
+#luci-app-openvpn
 #luci-app-https-dns-proxy
 luci-app-mwan3
 luci-app-mwan3-ledhelper
-luci-app-ota
+#luci-app-ota
 luci-app-commands
 #luci-app-telegrambot
 luci-app-ttl
@@ -19,6 +19,8 @@ luci-app-ttyd
 # Network proto
 luci-proto-xmm
 luci-proto-amneziawg
+luci-proto-openvpn
+luci-proto-tun2socks
 #luci-proto-mbim
 #luci-proto-qmi
 luci-proto-wireguard
@@ -58,7 +60,7 @@ modeminfo-serial-thales
 modeminfo-serial-huawei
 modeminfo-telegram
 openvpn-openssl
-openvpn-dns-hotplug
+#openvpn-dns-hotplug
 xl2tpd
 # remove nft
 -firewall4
