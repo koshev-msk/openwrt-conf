@@ -52,6 +52,12 @@ setup_mwan3(){
 				huastlink,hc-g60)
 					LEDS="-l blue:status -o green:status"
 				;;
+				huastlink,hc-g60-v1|\
+				huastlink,hc-g80|\
+				zbtlink,zbt-wg1608-16m|\
+				zbtlink,zbt-wg1608-32m)
+					LEDS="-l green:wwan"
+				;;
 				zbtlink,zbt-wg2107)
 					LEDS="-l green:wwan1 green:wwan2"
 				;;
@@ -69,10 +75,6 @@ setup_mwan3(){
 				zbtlink,zbt-z8109ax-nand-128m|\
 				zbtlink,zbt-z8109ax-nand-all)
 					LEDS="-l green:modem1 green:modem2 green:modem3 green:modem4"
-				;;
-				zbtlink,zbt-wg1608-16m|\
-				zbtlink,zbt-wg1608-32m)
-					LEDS="-l green:wwan"
 				;;
 				*) LEDS="false" ;;
 			esac
