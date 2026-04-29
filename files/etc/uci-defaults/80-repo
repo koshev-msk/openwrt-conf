@@ -35,6 +35,7 @@ cat << 'EOF' > /usr/libexec/apk
 EOF
 			chmod +x /usr/libexec/apk
 			ln -s /usr/libexec/apk /usr/bin
+		}
 		
 	;;
 	24.10.*)
