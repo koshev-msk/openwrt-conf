@@ -14,14 +14,49 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEC0R0QAKZD4FiUtlcn7T9/hqIGtoO
 fg1zqH+k5xEYSMphv8Hu4VxSsxWFuOqAc5y6k/gVpgrePsY+G6HUyX+vTQ==
 -----END PUBLIC KEY-----
 EOF
-		echo "https://openwrt.132lan.ru/packages/${DISTRIB_RELEASE%.*}/packages/${DISTRIB_ARCH}/modemfeed/packages.adb" >> /etc/apk/customfeeds.conf
+		echo "https://openwrt.132lan.ru/packages/${DISTRIB_RELEASE%.*}/packages/${DISTRIB_ARCH}/modemfeed/packages.adb" >> /etc/apk/repositories.d/customfeeds.list
+		FILE=/etc/apk/keys/passwall.pem
+cat << 'EOF' > $FILE
+-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEOmXHYLJGWFQCtbWqDqlxMvcAvkZZ
+Owy7UzzBIOxrGSAiu1blMeX96Q55Q9PH5GyjPwYiT4nrrwRgIttggGK62w==
+-----END PUBLIC KEY-----
+EOF
+		for feed in passwall_packages passwall2; do
+			echo "https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-${DISTRIB_RELEASE%.*}/${DISTRIB_ARCH}/${feed}/packages.adb" \
+				>> /etc/apk/repositories.d/customfeeds.list
+		done
+		# enable allow untrusted packages install
+		[ -x /usr/bin/apk ] && {
+			mv /usr/bin/apk /usr/bin/apk.orig
+cat << 'EOF' > /usr/libexec/apk
+#!/bin/sh
+/usr/bin/apk.orig --allow-untrusted $@
+EOF
+			chmod +x /usr/libexec/apk
+			ln -s /usr/libexec/apk /usr/bin
+		
 	;;
-	*)
+	24.10.*)
 		FILE=/etc/opkg/keys/0c045b2ab5a62241
 cat << 'EOF' > $FILE
 untrusted comment: public key 0c045b2ab5a62241
 RWQMBFsqtaYiQUBLJyFWcco98vKKEN9I1QRAonQBKTQu0yAzNOyPuN1s
 EOF
+	echo "src/gz modemfeed http://openwrt.132lan.ru/packages/${DISTRIB_RELEASE%.*}/packages/${DISTRIB_ARCH}/modemfeed" >> /etc/opkg/customfeeds.conf
+	# Add passwall2 repo
+FILE=/etc/opkg/keys/passwall
+cat << 'EOF' > $FILE
+untrusted comment: OpenWRT usign key of dianlujitao
+RWQKvaZaSStIhx4t06ISyV42CIpK7niKfR+Yro/WHiKLa122SEh2j3Z4
+EOF
+		for feed in passwall_packages passwall2; do
+        		echo "src/gz $feed https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-${DISTRIB_RELEASE%.*}/${DISTRIB_ARCH}/$feed" >> /etc/opkg/customfeeds.conf
+		done
+		# Disable signature peckages
+		sed -i 's/^option check_signature/#option check_signature/' /etc/opkg.conf	
+	;;
+	21.02*|23.05*)
 
 		FILE=/etc/opkg/keys/62705f7e940c2737
 cat << 'EOF' > $FILE
@@ -29,17 +64,7 @@ untrusted comment: public key 62705f7e940c2737
 RWRicF9+lAwnN+JSxJwzpTJAAVHOBCbXgixOt2lLKZM4vhq42tMShgmc
 EOF
 		echo "src/gz modemfeed http://openwrt.132lan.ru/packages/${DISTRIB_RELEASE%.*}/packages/${DISTRIB_ARCH}/modemfeed" >> /etc/opkg/customfeeds.conf
-		# Add passwall2 repo
-		FILE=/etc/opkg/keys/passwall
-cat << 'EOF' > $FILE
-untrusted comment: OpenWRT usign key of dianlujitao
-RWQKvaZaSStIhx4t06ISyV42CIpK7niKfR+Yro/WHiKLa122SEh2j3Z4
-EOF
-		for feed in passwall_packages passwall2; do
-			echo "src/gz $feed https://master.dl.sourceforge.net/project/openwrt-passwall-build/releases/packages-${DISTRIB_RELEASE%.*}/${DISTRIB_ARCH}/$feed" >> /etc/opkg/customfeeds.conf
-		done
-
-
 	;;
+
 esac
 

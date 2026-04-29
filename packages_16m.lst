@@ -20,7 +20,7 @@ luci-app-ttyd
 luci-proto-xmm
 luci-proto-amneziawg
 luci-proto-openvpn
-luci-proto-tun2socks
+#luci-proto-tun2socks
 #luci-proto-mbim
 #luci-proto-qmi
 luci-proto-wireguard
@@ -90,11 +90,14 @@ kmod-nf-ipt6
 kmod-ipt-raw
 kmod-ipt-raw6
 kmod-ipt-geoip
+kmod-ipt-tls
 ip6tables-zz-legacy
 iptables-zz-legacy
 iptables-mod-nfqueue
 iptables-mod-conntrack-extra
 iptables-mod-geoip
+iptables-mod-tls
+iptables-mod-ipopt
 # kernel mod's
 kmod-nfnetlink-queue
 kmod-usb-serial-qualcomm
@@ -117,16 +120,14 @@ kmod-nf-nathelper-extra
 kmod-button-hotplug
 # AmneziaWG VPN kmod
 kmod-amneziawg
-# wireless
-#wpad-basic-openssl
 # PPP
 ppp-mod-pptp
-# iptables 
-iptables-mod-ipopt
 # libraries
 lib3proxy
 libustream-openssl20201210
 # removed pkgs. Curl must be build with openssl library
+# wireless
+#wpad-basic-openssl
 -wpad-basic-mbedtls
 hostapd-openssl
 wpa-supplicant-openssl
@@ -146,7 +147,7 @@ kmod-fs-exfat
 block-mount
 # usb utilites
 usbutils
-uhubctl
+#uhubctl
 # MPTCP
 kmod-inet-mptcp-diag
 mptcpd
