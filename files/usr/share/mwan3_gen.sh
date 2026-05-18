@@ -6,6 +6,7 @@
 OFFSET_METRIC=1000
 DEFAULT_POLICY="balanced"
 LAN_INTERFACE="lan"  # default LAN interface
+TRACK_HOSTS="dns.yandex"  # default track hosts
 
 # Parse command line arguments
 INTERFACES=""
@@ -40,25 +41,51 @@ while [ $# -gt 0 ]; do
                 exit 1
             fi
             ;;
-        -h|--help)
-            echo "Usage: $0 -i <interface1> [interface2 ...] [-p <default_policy>] [-l <lan_interface>]"
+        -h|--host)
+            shift
+            TRACK_HOSTS=""
+            while [ $# -gt 0 ] && ! echo "$1" | grep -q '^-'; do
+                if [ -z "$TRACK_HOSTS" ]; then
+                    TRACK_HOSTS="$1"
+                else
+                    TRACK_HOSTS="$TRACK_HOSTS $1"
+                fi
+                shift
+            done
+            ;;
+        --help)
+            echo "Usage: $0 -i <interface1> [interface2 ...] [-p <default_policy>] [-l <lan_interface>] [-h <host1> [host2 ...]]"
             echo ""
             echo "Options:"
             echo "  -i, --interface    WAN interfaces to configure (required, at least 2)"
             echo "  -p, --policy       Default policy name (default: balanced)"
             echo "  -l, --lan          LAN interface name (default: lan)"
-            echo "  -h, --help         Show this help message"
+            echo "  -h, --host         Target hosts for track_ip (default: dns.yandex)"
+            echo "  --help             Show this help message"
             echo ""
             echo "Examples:"
             echo "  $0 -i wan1 wan2"
             echo "  $0 -i wan1 wan2 wan3 -p 90_wan1"
             echo "  $0 -i eth0 eth1 -p 100_eth0 -l br-lan"
-            echo "  $0 -i wwan0 wwan1 -p balanced -l lan"
+            echo "  $0 -i wwan0 wwan1 -p balanced -l lan -h 8.8.8.8 1.1.1.1"
+            echo "  $0 -i wan1 wan2 -h 8.8.8.8 4.2.2.4 1.1.1.1"
+            exit 0
+            ;;
+        -h|--help)
+            # Fallback for -h as help (keep for backward compatibility)
+            echo "Usage: $0 -i <interface1> [interface2 ...] [-p <default_policy>] [-l <lan_interface>] [-h <host1> [host2 ...]]"
+            echo ""
+            echo "Options:"
+            echo "  -i, --interface    WAN interfaces to configure (required, at least 2)"
+            echo "  -p, --policy       Default policy name (default: balanced)"
+            echo "  -l, --lan          LAN interface name (default: lan)"
+            echo "  -h, --host         Target hosts for track_ip (default: dns.yandex)"
+            echo "  --help             Show this help message"
             exit 0
             ;;
         -*)
             echo "Error: Unknown option: $1" >&2
-            echo "Use -h for help" >&2
+            echo "Use --help for help" >&2
             exit 1
             ;;
         *)
@@ -76,7 +103,7 @@ done
 # Check interfaces
 if [ -z "$INTERFACES" ]; then
     echo "Error: No WAN interfaces specified" >&2
-    echo "Usage: $0 -i <interface1> [interface2 ...] [-p <default_policy>] [-l <lan_interface>]" >&2
+    echo "Usage: $0 -i <interface1> [interface2 ...] [-p <default_policy>] [-l <lan_interface>] [-h <host1> [host2 ...]]" >&2
     exit 1
 fi
 
@@ -112,8 +139,19 @@ if [ -z "$NETWORK" ] || [ -z "$PREFIX" ]; then
     exit 1
 fi
 
-# awk config generator - используем echo для передачи интерфейсов в awk
-echo "$INTERFACES" | awk -v lan="${NETWORK}/${PREFIX}" -v offset_metric="$OFFSET_METRIC" -v default_policy="$DEFAULT_POLICY" -v lan_interface="$LAN_INTERFACE" '
+# Build track_ip list for awk
+TRACK_IPS_LIST=""
+for host in $TRACK_HOSTS; do
+    TRACK_IPS_LIST="$TRACK_IPS_LIST $host"
+done
+
+# awk config generator
+echo "$INTERFACES" | awk -v lan="${NETWORK}/${PREFIX}" -v offset_metric="$OFFSET_METRIC" -v default_policy="$DEFAULT_POLICY" -v lan_interface="$LAN_INTERFACE" -v track_hosts="$TRACK_IPS_LIST" '
+BEGIN {
+    # Split track_hosts into array
+    split(track_hosts, hosts_array, " ")
+}
+
 {
 
     print "config globals '\''globals'\''"
@@ -131,7 +169,12 @@ echo "$INTERFACES" | awk -v lan="${NETWORK}/${PREFIX}" -v offset_metric="$OFFSET
         print "    option enabled '\''1'\''"
         print "    option family '\''ipv4'\''"
         print "    option track_method '\''ping'\''"
-        print "    list track_ip '\''dns.yandex'\''"
+        # Generate track_ip entries
+        for (h in hosts_array) {
+            if (hosts_array[h] != "") {
+                print "    list track_ip '\''" hosts_array[h] "'\''"
+            }
+        }
         print "    option reliability '\''1'\''"
         print "    option count '\''1'\''"
         print "    option timeout '\''2'\''"

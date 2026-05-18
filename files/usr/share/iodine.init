@@ -1,0 +1,27 @@
+#!/bin/sh /etc/rc.common
+
+# OpenWrt init script iodine client by koshev-msk 2026
+
+START=90
+
+instance_iodine(){
+	for v in tld password device nameserver extra; do
+		config_get $v $1 $v
+	done
+}
+
+start(){
+	local tld password device nameserver extra
+	config_load iodine
+	config_foreach instance_iodine 'iodine'
+	[ $tld ] || exit 0
+	[ $password ] || exit 0
+	[ $device ] && args="-d $device"
+	[ $extra ] && args="$args $extra"
+
+	service_start /usr/sbin/iodine -P $password $args -F /var/run/iodine.pid $nameserver $tld
+}
+
+stop(){
+	service_stop /usr/sbin/iodine
+}
