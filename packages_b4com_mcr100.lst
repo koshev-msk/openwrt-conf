@@ -1,0 +1,5 @@
+kmod-usb-net-smsc95xx
+kmod-slhc
+kmod-mii
+luci-proto-qmi
+luci-proto-mbim 
