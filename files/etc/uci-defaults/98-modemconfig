@@ -747,8 +747,8 @@ detect_modems(){
 	TOTAL_MODEMS=$((MM_COUNT + XMM_COUNT))
 	logger -t "$NODE" "Detected modems: $TOTAL_MODEMS"
 }
-
 # iface name
+ make_ifname(){
 	[ "$TOTAL_MODEMS" -eq "1" ] && ifmodemname=modem || ifmodemname=modem${mn}
 }
 

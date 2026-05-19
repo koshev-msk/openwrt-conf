@@ -152,7 +152,7 @@ case $board in
 		uci set system.modem2.value='1'
 	;;
 	b4com,mcr200)
-		restart modem gpio140 gpio141
+		restart_modem gpio140 gpio141
 		uci set system.modem2.value='1'
 	;;
 	hooolink,hl-wr832v1)
@@ -237,10 +237,11 @@ uci batch << EOF
 set system.@system[-1].zonename='Europe/Moscow'
 set system.@system[-1].timezone='MSK-3'
 set system.@system[-1].hostname=$MACHINE
-commit system
 EOF
 
 # OTA Update server
 [ -f /etc/config/ota ] && {
 	uci set ota.@ota[0].url='https://openwrt.132lan.ru/releases_cell/latest'
 }
+
+uci commit system

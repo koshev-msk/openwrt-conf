@@ -47,7 +47,7 @@ luci-proto-modemmanager
 # LuCi themes
 #luci-theme-lightblue
 # modem app
-modeminfo-qmi
+qminfo
 modeminfo-serial-xmm
 modeminfo-serial-dell
 modeminfo-serial-quectel

@@ -45,7 +45,7 @@ luci-proto-modemmanager
 # LuCi themes
 #luci-theme-lightblue
 # modem app
-modeminfo-qmi
+qminfo
 modeminfo-serial-xmm
 modeminfo-serial-dell
 modeminfo-serial-quectel
@@ -58,7 +58,7 @@ modeminfo-serial-thales
 modeminfo-serial-huawei
 #modeminfo-telegram
 openvpn-openssl
-openvpn-dns-hotplug
+#openvpn-dns-hotplug
 xl2tpd
 # remove nft
 -firewall4
