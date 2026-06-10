@@ -5,6 +5,7 @@
 
 board="$(cat /tmp/sysinfo/board_name)"
 RES=/usr/share/modeminfo/modem.list
+SMS_CONFIGURED=0
 
 # ============================================================
 # COMMON
@@ -14,7 +15,7 @@ args(){
 	echo "$#"
 }
 
-# default UCI config for modeminfo and smstools3
+# UCI init modeminfo and smstools3
 default_setup(){
 	uci set modeminfo.@general[0]=general
 	uci set modeminfo.@general[0].index='1'
@@ -25,18 +26,37 @@ default_setup(){
 	uci set smstools3.@sms[0].loglevel='5'
 }
 
-
-disable_mm(){
-	for m in stop disable; do
-		/etc/init.d/modemmanager ${m}
-	done
+log_modem_found(){
+	logger -t "$NODE" "Found: $FAMILY (${VID}:${PID}) -> $ifmodemname data: ${DEVICE}"
+	logger -t "$NODE" "Ports at: /dev/${ATPORT} sms: /dev/${SMSPORT}"
 }
+
+log_xmm_found(){
+	local smsport="${device%?}$((${device: -1}+2))"
+	logger -t "$NODE" "Found: $FAMILY (${vid}:${pid}) -> $ifmodemname data: /dev/${device}"
+	logger -t "$NODE" "Ports at: /dev/${device} sms: /dev/${smsport}"
+}
+
+# SIM error
+log_sim_missing(){
+	logger -t "$NODE" "WARNING: $ifmodemname SIM is missing or not ready. Disabled:"
+	logger -t "$NODE" "WARNING:   - network interface bring up"
+	logger -t "$NODE" "WARNING:   - SMS messaging"
+	logger -t "$NODE" "WARNING:   - ping alive link"
+	logger -t "$NODE" "WARNING: Fix SIM issue and configure manually, or reset to defaults."
+}
+
 
 # ============================================================
 # MODEMCONFIG (modemmanager / mmcli)
 # ============================================================
 
-NODE_MM=MODEMCONFIG
+stop_services(){
+	for svc in "$@"; do
+		/etc/init.d/${svc} stop
+		/etc/init.d/${svc} disable
+	done
+}
 
 read_modem_list(){
 	MODEMS=$(jsonfilter -s "$(mmcli -L -J)" -e "@['modem-list'][*]" | sort)
@@ -62,17 +82,17 @@ EOF
 }
 
 atinout_msg(){
-	logger -t "$NODE_MM" "WARNING: Generate atinout commands for change USB-composition"
-	logger -t "$NODE_MM" "WARNING: Go to \"Modem\" -> \"AT Commands\" and select modem mode."
-	logger -t "$NODE_MM" "WARNING: Select AT-port and put command to modem"
-	logger -t "$NODE_MM" "WARNING: For autoconfig reset router to defaults."
+	logger -t "$NODE" "WARNING: Generate atinout commands for change USB-composition"
+	logger -t "$NODE" "WARNING: Go to \"Modem\" -> \"AT Commands\" and select modem mode."
+	logger -t "$NODE" "WARNING: Select AT-port and put command to modem"
+	logger -t "$NODE" "WARNING: For autoconfig reset router to defaults."
 }
 
 failed_msg(){
-	logger -t "$NODE_MM" "WARNING: But modem is failed with reason: \"${FAILED}\". Functionality is disabled."
-	logger -t "$NODE_MM" "WARNING: Eliminate the failure cause and enable check ping,"
-	logger -t "$NODE_MM" "WARNING: Network interface and SMS messaging manually"
-	logger -t "$NODE_MM" "WARNING: or reset device to defaults, for automatic setup."
+	logger -t "$NODE" "WARNING: But modem is failed with reason: \"${FAILED}\". Functionality is disabled."
+	logger -t "$NODE" "WARNING: Eliminate the failure cause and enable check ping,"
+	logger -t "$NODE" "WARNING: Network interface and SMS messaging manually"
+	logger -t "$NODE" "WARNING: or reset device to defaults, for automatic setup."
 }
 
 standby_modems(){
@@ -97,49 +117,35 @@ get_modem_param(){
 		-e "FAILED=$['modem']['generic']['state-failed-reason']"
 }
 
-modeminfo_conf(){
-	case $ATPORT in
+setup_modeminfo(){
+	local port="$1"
+	uci add modeminfo modeminfo
+	case $port in
 		*ttyUSB*|*ttyACM*)
-			uci add modeminfo modeminfo
-			uci set modeminfo.@modeminfo[-1].device=/dev/${ATPORT}
+			uci set modeminfo.@modeminfo[-1].device=/dev/${port}
 			case $FAMILY in
 				*DELL*|*QUALCOMM*) uci set modeminfo.@modeminfo[-1].mmcli_name=1 ;;
 			esac
 		;;
 		*cdc-wdm*)
-			uci add modeminfo modeminfo
 			uci set modeminfo.@modeminfo[-1].qmi_mode=1
-			uci set modeminfo.@modeminfo[-1].device_qmi=/dev/${ATPORT}
+			uci set modeminfo.@modeminfo[-1].qmi_proxy=1
+			uci set modeminfo.@modeminfo[-1].device_qmi=/dev/${port}
 		;;
 	esac
 }
 
-mm_smstools3_conf(){
+setup_smstools3(){
+	local port="$1"
 	uci set smstools3.$ifmodemname=modem
-	uci set smstools3.$ifmodemname.device=/dev/${SMSPORT}
-	[ "$FAILED" = "--" ] && uci set smstools3.$ifmodemname.enable=1
+	uci set smstools3.$ifmodemname.device=/dev/${port}
+	[ "$ENABLED" = "1" ] && uci set smstools3.$ifmodemname.enable=1
+	SMS_CONFIGURED=1
 }
 
-iface_modemmanager(){
-	uci set network.$ifmodemname=interface
-	uci set network.$ifmodemname.proto=modemmanager
-	uci set network.$ifmodemname.device=$DEVICE
-	uci set network.$ifmodemname.iptype=ipv4
-	uci set network.$ifmodemname.apn=$APN
-	uci add_list network.$ifmodemname.allowedauth=none
-	uci set network.$ifmodemname.signalrate='10'
-	uci set network.$ifmodemname.metric=${mn}00
-	[ "$FAILED" = "--" ] || uci set network.$ifmodemname.disabled='1'
-}
-
-mmconfig_setup(){
-	uci set mmconfig.$ifmodemname=modem
-	uci set mmconfig.$ifmodemname.device=$DEVICE
-}
-
-mm_pingcontrol_setup(){
+setup_pingcontrol(){
 	uci set pingcontrol.$ifmodemname=pingcontrol
-	[ "$FAILED" = "--" ] && uci set pingcontrol.$ifmodemname.enabled='1'
+	[ "$ENABLED" = "1" ] && uci set pingcontrol.$ifmodemname.enabled='1'
 	uci set pingcontrol.$ifmodemname.check_period='60'
 	uci set pingcontrol.$ifmodemname.ping_silent='1'
 	uci set pingcontrol.$ifmodemname.iface=$ifmodemname
@@ -148,18 +154,39 @@ mm_pingcontrol_setup(){
 	uci set pingcontrol.$ifmodemname.testip='dns.yandex'
 }
 
+setup_iface(){
+	local proto="$1"
+	local dev="$2"
+	uci set network.$ifmodemname=interface
+	uci set network.$ifmodemname.proto=$proto
+	uci set network.$ifmodemname.device=$dev
+	uci set network.$ifmodemname.apn=$APN
+	uci set network.$ifmodemname.metric=${mn}00
+	[ "$ENABLED" = "1" ] || uci set network.$ifmodemname.disabled='1'
+	uci add_list firewall.@zone[1].network=$ifmodemname
+	case $proto in
+		modemmanager|qmi) uci set network.$ifmodemname.iptype=ipv4 ;;
+		xmm)              uci set network.$ifmodemname.pdp=ipv4 ;;
+	esac
+}
+
+mmconfig_setup(){
+	uci set mmconfig.$ifmodemname=modem
+	uci set mmconfig.$ifmodemname.device=$DEVICE
+}
+
 iface_mm_bearer(){
 	case $VIDPID in
 		12d11*) uci set network.$ifmodemname.init_epsbearer=none ;;
 		*2cb7010a*)
 			uci set network.$ifmodemname.init_epsbearer=none
 			atinout_cfg_nl678
-			logger -t "$NODE_MM" "WARNING: modem in NCM mode, but will work QMI. Please setup modem mode AT-command"
+			logger -t "$NODE" "WARNING: modem in NCM mode, but will work QMI. Please setup modem mode AT-command"
 			atinout_msg
 		;;
 		*8087095a*)
 			atinout_cfg_l850
-			logger -t "$NODE_MM" "WARNING: modem in XMM mode, check modem model, if model L850 please setup modem mode AT-command"
+			logger -t "$NODE" "WARNING: modem in XMM mode, check modem model, if model L850 please setup modem mode AT-command"
 			atinout_msg
 		;;
 		*) uci set network.$ifmodemname.init_epsbearer=default ;;
@@ -169,13 +196,12 @@ iface_mm_bearer(){
 configure_mm_uci(){
 	ARGSLENMODEM=$(args $MODEMS)
 	[ $ARGSLENMODEM -eq 0 ] && {
-		logger -t "$NODE_MM" "WARNING: modems not found in system"
+		logger -t "$NODE" "WARNING: modems not found in system"
 		return 0
 	}
 	default_setup
 	NOT_SUPPORT_MM=1
-	L850=0
-
+	HAS_L850=0
 	for m in $MODEMS; do
 		mmcli -m ${m} -e
 		sleep 5
@@ -186,17 +212,10 @@ configure_mm_uci(){
 		[ -r ${RES} ] && {
 			[ "$VID" -a "$PID" ] && {
 				FAMILY=$(awk -F [\;] '/'$VIDPID'/{print toupper($2)}' $RES)
-				logger -t "$NODE_MM" "Found family $FAMILY modem: ${VID}:${PID}"
 			}
 			[ "$FAILED" = "--" ] || failed_msg
 		}
-		case $OPERATOR in
-			25001) APN=internet.mts.ru ;;
-			25011) APN=internet.yota ;;
-			25020) APN=internet.tele2.ru ;;
-			25099) APN=internet.beeline.ru ;;
-			*) APN=internet ;;
-		esac
+		resolve_apn $OPERATOR
 		make_ifname
 		[ "x${VIDPID}" != "x" ] && {
 			case $VIDPID in
@@ -207,7 +226,7 @@ configure_mm_uci(){
 					continue
 				;;
 				2cb70007)
-					L850=1
+					HAS_L850=1
 					NOT_SUPPORT_MM=0
 				;;
 				*)
@@ -222,22 +241,26 @@ configure_mm_uci(){
 			*) ATPORT=$(echo "$PORTS" | awk '{ for (i=1; i<=NF; i++) { if ($(i+1) == "(at)") { print $i; break; }}}') ;;
 		esac
 		[ "x${m}" != "x" ] && [ "$NOT_SUPPORT_MM" = "0" ] && {
-			iface_modemmanager
+			[ "$FAILED" = "--" ] && ENABLED=1 || ENABLED=0
+			setup_iface modemmanager $DEVICE
+			uci add_list network.$ifmodemname.allowedauth=none
+			uci set network.$ifmodemname.signalrate='10'
 			iface_mm_bearer
 			mmconfig_setup
-			mm_pingcontrol_setup
+			setup_pingcontrol
 			uci add_list firewall.@zone[1].network=$ifmodemname
-			logger -t "$NODE_MM" "Setting up modem interface \"$ifmodemname\" with APN: ${APN}"
+			log_modem_found
+			logger -t "$NODE" "APN: ${APN}"
 		} || {
-			logger -t "$NODE_MM" "WARNING: modem: ${VID}:${PID} not supported by modemmanager."
-			logger -t "$NODE_MM" "WARNING: Please manualy configure interface."
+			logger -t "$NODE" "WARNING: modem: ${VID}:${PID} not supported by modemmanager."
+			logger -t "$NODE" "WARNING: Please manualy configure interface."
 		}
 		! [ "$ATPORT" = "" ] && {
-			modeminfo_conf
+			setup_modeminfo $ATPORT
 			case $ATPORT in
 				ttyUSB*)
 					SMSPORT=${ATPORT%?}$((${ATPORT: -1}+1))
-					mm_smstools3_conf
+					setup_smstools3 $SMSPORT
 					case $VIDPID in
 						2cb70104|2cb70109)
 							uci set smstools3.$ifmodemname.net_check='0'
@@ -247,7 +270,7 @@ configure_mm_uci(){
 				;;
 				ttyACM*)
 					SMSPORT=${ATPORT%?}$((${ATPORT: -1}+2))
-					mm_smstools3_conf
+					setup_smstools3 $SMSPORT
 					uci set smstools3.$ifmodemname.net_check='0'
 					uci set smstools3.$ifmodemname.sig_check='1'
 				;;
@@ -257,35 +280,6 @@ configure_mm_uci(){
 		MWAN_IFACES="$MWAN_IFACES $ifmodemname"
 		unset ATPORT FAMILY
 	done
-
-	[ ! -n "$SMSPORT" -a "$NOT_SUPPORT_MM" = "0" ] && {
-		for i in smstools3 luci-sms; do
-			for a in stop disable; do
-				/etc/init.d/${i} ${a}
-			done
-		done
-		logger -t "$NODE_MM" "WARNING: Any installed modems no have two or more AT-ports"
-		logger -t "$NODE_MM" "WARNING: SMS messaging funcionality disabled."
-		logger -t "$NODE_MM" "WARNING: Please manually configure service."
-	}
-	[ "$L850" = "0" ] && {
-		[ -x /etc/init.d/fixmodem ] && /etc/init.d/fixmodem disable
-	}
-	[ "$NOT_SUPPORT_MM" = "1" ] && {
-		logger -t "$NODE_MM" "WARNING: Any installed modems not supported by autoconfiguration."
-		logger -t "$NODE_MM" "WARNING: Mobile services is stopped."
-		logger -t "$NODE_MM" "WARNING: Please manually configure it."
-		for i in smstools3 luci-sms modemmanager; do
-			for a in stop disable; do
-				/etc/init.d/${i} ${a}
-			done
-		done
-		atinout_cfg_l850
-		atinout_cfg_nl678
-		atinout_msg
-	} || {
-		logger -t "$NODE_MM" "Modem interface(s) setup complete."
-	}
 }
 
 mm_stuff(){
@@ -296,121 +290,108 @@ mm_stuff(){
 
 
 # ============================================================
-# XMMCONFIG (Fibocom L850 / FM350 via xmm proto)
+# XMMCONFIG (Fibocom L850/L860/FM350 via xmm proto)
 # ============================================================
 
-NODE_XMM=XMMCONFIG
-
 xmm_uci_config(){
-	logger -t "$NODE_XMM" "Found device $FAMILY (${vid}:${pid}) with port /dev/${device} ($interface)"
-	uci set network.$ifmodemname=interface
-	uci set network.$ifmodemname.proto=xmm
-	uci set network.$ifmodemname.device=/dev/${device}
-	uci set network.$ifmodemname.apn=internet
-	uci set network.$ifmodemname.metric=${mn}00
-	[ "$FAILED" = "--" ] || uci set network.$ifmodemname.disabled='1'
-	uci add_list firewall.@zone[1].network=$ifmodemname
-	uci add modeminfo modeminfo
-	uci set modeminfo.@modeminfo[-1].device=/dev/${device}
-	uci set pingcontrol.$ifmodemname=pingcontrol
-	[ "$FAILED" = "--" ] && uci set pingcontrol.$ifmodemname.enabled='1'
-	uci set pingcontrol.$ifmodemname.check_period='60'
-	uci set pingcontrol.$ifmodemname.ping_silent='1'
-	uci set pingcontrol.$ifmodemname.iface=$ifmodemname
-	uci set pingcontrol.$ifmodemname.sw_before_modres='2'
-	uci set pingcontrol.$ifmodemname.sw_before_sysres='5'
-	uci set pingcontrol.$ifmodemname.testip='dns.yandex'
-	uci commit network
-	uci commit firewall
-	uci commit modeminfo
-	uci commit pingcontrol
-	sleep 3
-	ifup $ifmodemname
+	APN=internet
+	[ "$FAILED" = "--" ] && ENABLED=1 || ENABLED=0
+	setup_iface xmm /dev/${device}
+	setup_modeminfo $device
+	setup_pingcontrol
 }
 
 xmm_smstools_uci_config(){
-	SMSPORT=/dev/${device%?}$((${device: -1}+2))
-	logger -t "$NODE_XMM" "Start SMS messaging configure with port $SMSPORT"
-	uci set smstools3.$ifmodemname=modem
-	uci set smstools3.$ifmodemname.device=$SMSPORT
+	local smsport="${device%?}$((${device: -1}+2))"
+	setup_smstools3 $smsport
 	uci set smstools3.$ifmodemname.net_check='0'
 	uci set smstools3.$ifmodemname.sig_check='1'
-	[ "$FAILED" = "--" ] && uci set smstools3.$ifmodemname.enable=1
 }
 
 check_sim(){
 	gcom -d /dev/${device} -s /etc/gcom/setpin.gcom > /dev/null 2>&1 && FAILED="--" || FAILED=OK
 }
 
+get_tty_vidpid(){
+	local dev_name="$1"
+	vid="" pid="" interface=""
+	[ -e "/sys/class/tty/${dev_name}" ] || return 1
+	local tty_path; tty_path=$(readlink -f "/sys/class/tty/${dev_name}" 2>/dev/null)
+	local cur="$tty_path" iface_path=""
+	while [ -n "$cur" ] && [ "$cur" != "/" ]; do
+		[ -f "${cur}/bInterfaceNumber" ] && { iface_path="$cur"; break; }
+		cur=$(dirname "$cur")
+	done
+	[ -n "$iface_path" ] || return 1
+	local usb_path; usb_path=$(dirname "$iface_path")
+	while [ -n "$usb_path" ] && [ "$usb_path" != "/" ]; do
+		[ -f "${usb_path}/idVendor" ] && [ -f "${usb_path}/idProduct" ] && break
+		usb_path=$(dirname "$usb_path")
+	done
+	[ -n "$usb_path" ] && [ "$usb_path" != "/" ] || return 1
+	vid=$(cat "${usb_path}/idVendor" 2>/dev/null)
+	pid=$(cat "${usb_path}/idProduct" 2>/dev/null)
+	interface=$(cat "${iface_path}/bInterfaceNumber" 2>/dev/null)
+	return 0
+}
+
+resolve_apn(){
+	local plmn="$1"
+	case $plmn in
+		25001) APN=internet.mts.ru ;;
+		25011) APN=internet.yota ;;
+		25020) APN=internet.tele2.ru ;;
+		25099) APN=internet.beeline.ru ;;
+		*)     APN=internet ;;
+	esac
+}
+
 get_usb_info(){
 	device="$1"
-	if [ -e "/sys/class/tty/${device}" ]; then
-		tty_path=$(readlink -f "/sys/class/tty/${device}" 2>/dev/null)
-		interface_path=""
-		current_path="$tty_path"
-		while [ -n "$current_path" ] && [ "$current_path" != "/" ]; do
-			if [ -f "${current_path}/bInterfaceNumber" ]; then
-				interface_path="$current_path"
-				break
-			fi
-			current_path=$(dirname "$current_path")
-		done
-		if [ -n "$interface_path" ]; then
-			usb_device_path=$(dirname "$interface_path")
-			while [ -n "$usb_device_path" ] && [ "$usb_device_path" != "/" ]; do
-				if [ -f "${usb_device_path}/idVendor" ] && [ -f "${usb_device_path}/idProduct" ]; then
-					break
-				fi
-				usb_device_path=$(dirname "$usb_device_path")
-			done
-			if [ -n "$usb_device_path" ] && [ "$usb_device_path" != "/" ]; then
-				vid=$(cat "${usb_device_path}/idVendor" 2>/dev/null)
-				pid=$(cat "${usb_device_path}/idProduct" 2>/dev/null)
-				interface=$(cat "${interface_path}/bInterfaceNumber" 2>/dev/null)
-				case ${vid}${pid} in
-					8087095a)
-						case $interface in
-							00)
-								FAMILY="Fibocom L850/L850 NCM Modem"
-								make_ifname
-								mn=$((mn+1))
-								MWAN_IFACES="$MWAN_IFACES $ifmodemname"
-								check_sim
-								xmm_uci_config
-								xmm_smstools_uci_config
-							;;
-						esac
-					;;
-					0e8d7126)
-						FAMILY="Fibocom FM350 NCM Modem"
-						case $interface in
-							04)
-								make_ifname
-								mn=$((mn+1))
-								MWAN_IFACES="$MWAN_IFACES $ifmodemname"
-								check_sim
-								xmm_uci_config
-							;;
-						esac
-					;;
-					0e8d7127)
-						FAMILY="Fibocom FM350 NCM Modem"
-						case $interface in
-							06)
-								make_ifname
-								mn=$((mn+1))
-								MWAN_IFACES="$MWAN_IFACES $ifmodemname"
-								check_sim
-								xmm_uci_config
-							;;
-						esac
-					;;
-				esac
-				return 0
-			fi
-		fi
-	fi
-	return 1
+	get_tty_vidpid "$device" || return 1
+	case ${vid}${pid} in
+		8087095a)
+			case $interface in
+				00)
+					FAMILY="Fibocom L850/L860 NCM Modem"
+					make_ifname
+					mn=$((mn+1))
+					MWAN_IFACES="$MWAN_IFACES $ifmodemname"
+					check_sim
+					xmm_uci_config
+					xmm_smstools_uci_config
+					log_xmm_found
+				;;
+			esac
+		;;
+		0e8d7126)
+			FAMILY="Fibocom FM350 NCM Modem"
+			case $interface in
+				04)
+					make_ifname
+					mn=$((mn+1))
+					MWAN_IFACES="$MWAN_IFACES $ifmodemname"
+					check_sim
+					xmm_uci_config
+					log_xmm_found
+				;;
+			esac
+		;;
+		0e8d7127)
+			FAMILY="Fibocom FM350 NCM Modem"
+			case $interface in
+				06)
+					make_ifname
+					mn=$((mn+1))
+					MWAN_IFACES="$MWAN_IFACES $ifmodemname"
+					check_sim
+					xmm_uci_config
+					log_xmm_found
+				;;
+			esac
+		;;
+	esac
+	return 0
 }
 
 xmm_stuff(){
@@ -445,16 +426,16 @@ xmm_stuff(){
 
 
 # ============================================================
-# QMICONFIG (uqmi / QMI proto — only b4com boards)
+# QMICONFIG (uqmi / QMI proto b4com only)
 # ============================================================
-
-NODE_QMI=QMICONFIG
 
 check_mm(){
 	[ -x /usr/bin/mmcli ] && {
 		STATUS=$(/etc/init.d/modemmanager status > /dev/null 2>&1 && echo $?)
 		case $STATUS in
-			0) disable_mm ;;
+			0)
+				stop_services modemmanager
+			;;
 		esac
 	}
 }
@@ -485,72 +466,27 @@ qmi_ports(){
 			esac
 		;;
 		*)
-			logger -t "${NODE_QMI}" "Modem family not supported"
+			logger -t "$NODE" "Modem family not supported"
 			return 1
 		;;
 	esac
 }
 
-serving_modem(){
-	SERVING=$1
-	jsonfilter -s "$SERVING" \
-		-e "MCC=$['plmn_mcc']" \
-		-e "MNC=$['plmn_mnc']" \
-		-e "DESC=$['plmn_description']"
-}
-
-modem_iface_setup(){
-	uci set network.$ifmodemname=interface
-	uci set network.$ifmodemname.proto=qmi
-	uci set network.$ifmodemname.device=$DEVICE
-	uci set network.$ifmodemname.iptype=ipv4
-	uci set network.$ifmodemname.apn=$APN
-	uci set network.$ifmodemname.metric=${mn}00
-	[ "$SIM" = "ready" ] || uci set network.$ifmodemname.disabled='1'
-	uci add_list firewall.@zone[1].network=$ifmodemname
-}
-
-qmi_modeminfo_setup(){
-	case $ATPORT in
-		*ttyUSB*|*ttyACM*)
-			uci add modeminfo modeminfo
-			uci set modeminfo.@modeminfo[-1].device=/dev/${ATPORT}
-			case $FAMILY in
-				*DELL*|*QUALCOMM*) uci set modeminfo.@modeminfo[-1].mmcli_name=1 ;;
-			esac
+qmi_device(){
+	case $board in
+		b4com,mcr100|b4com,mcr200)
+			# accept
 		;;
-		*cdc-wdm*)
-			uci add modeminfo modeminfo
-			uci set modeminfo.@modeminfo[-1].qmi_mode=1
-			uci set modeminfo.@modeminfo[-1].qmi_proxy=1
-			uci set modeminfo.@modeminfo[-1].device_qmi=/dev/${ATPORT}
+		*)
+			logger -t "$NODE" "QMI device detection skipped: not a b4com board"
+			return 0
 		;;
 	esac
-}
-
-qmi_pingcontrol_setup(){
-	uci set pingcontrol.$ifmodemname=pingcontrol
-	[ "$SIM" = "ready" ] && uci set pingcontrol.$ifmodemname.enabled='1'
-	uci set pingcontrol.$ifmodemname.check_period='60'
-	uci set pingcontrol.$ifmodemname.ping_silent='1'
-	uci set pingcontrol.$ifmodemname.iface=$ifmodemname
-	uci set pingcontrol.$ifmodemname.sw_before_modres='2'
-	uci set pingcontrol.$ifmodemname.sw_before_sysres='5'
-	uci set pingcontrol.$ifmodemname.testip='dns.yandex'
-}
-
-qmi_smstools3_setup(){
-	uci set smstools3.$ifmodemname=modem
-	uci set smstools3.$ifmodemname.device=/dev/${SMSPORT}
-	[ "$SIM" = "ready" ] && uci set smstools3.$ifmodemname.enable=1
-}
-
-qmi_device(){
+	
 	CDC_WDM_DEV=$(ls /sys/class/usbmisc/)
 	ARGSLENMODEM=$(args $CDC_WDM_DEV)
-
 	[ "$ARGSLENMODEM" -eq "0" ] && {
-		logger -t "$NODE_QMI" "WARNING: modems not found in system"
+		logger -t "$NODE" "WARNING: modems not found in system"
 		return 1
 	} || {
 		default_setup
@@ -569,45 +505,27 @@ qmi_device(){
 						[ -r ${RES} ] && {
 							[ "$VID" -a "$PID" ] && {
 								FAMILY=$(awk -F [\;] '/'${VID}${PID}'/{print toupper($2)}' $RES)
-								logger -t "$NODE_QMI" "Found family $FAMILY modem: ${VID}:${PID}"
 								qmi_ports $FAMILY
-								logger -t "$NODE_QMI" "Setting up services for $ifmodemname:"
 								get_at_port
-								logger -t "$NODE_QMI" "Data: ${DEVICE}"
-								logger -t "$NODE_QMI" "Metric: /dev/${ATPORT}"
-								logger -t "$NODE_QMI" "SMS: /dev/${SMSPORT}"
+								log_modem_found
 								SIM=$(uqmi -d ${DEVICE} --uim-get-sim-state | jsonfilter -e '@["card_application_state"]')
-								[ $SIM = "ready" ] || {
-									logger -t "$NODE_QMI" "WARNING: $ifmodemname SIM is missing. Disabled next services:"
-									logger -t "$NODE_QMI" "- Bring up boot modem interface."
-									logger -t "$NODE_QMI" "- SMS messaging."
-									logger -t "$NODE_QMI" "- Ping alive link."
-									logger -t "$NODE_QMI" "Plese setting up it manually after clearing SIM error reason."
-								}
-								SERVING="$(uqmi -d ${DEVICE} --get-serving-system)"
-								eval $(serving_modem "$SERVING")
-								case $MCC in
-									250)
-										case $MNC in
-											1) APN=internet.mts.ru ;;
-											11) APN=internet.yota ;;
-											20) APN=internet.tele2.ru ;;
-											99) APN=internet.beeline.ru ;;
-											*) APN=internet ;;
-										esac
-									;;
-									*) APN=internet ;;
-								esac
-								modem_iface_setup
-								qmi_modeminfo_setup
-								qmi_pingcontrol_setup
-								qmi_smstools3_setup
+								[ $SIM = "ready" ] || log_sim_missing
+								eval $(uqmi -d ${DEVICE} --get-serving-system | jsonfilter \
+									-e "MCC=$['plmn_mcc']" \
+									-e "MNC=$['plmn_mnc']")
+								resolve_apn "${MCC}${MNC}"
+								[ "$SIM" = "ready" ] && ENABLED=1 || ENABLED=0
+								setup_iface qmi $DEVICE
+								setup_modeminfo $ATPORT
+								setup_pingcontrol
+								setup_smstools3 $SMSPORT
 							}
 						}
 						MWAN_IFACES="$MWAN_IFACES $ifmodemname"
 						unset ATPORT FAMILY VID PID
+						continue 2
 					;;
-					*) logger -t "$NODE_QMI" "Device /dev/${d} is not QMI. Skip." ;;
+					*) logger -t "$NODE" "Device /dev/${d} is not QMI. Skip." ;;
 				esac
 			;;
 		esac
@@ -616,7 +534,7 @@ qmi_device(){
 
 qmi_stuff(){
 	[ -x /sbin/uqmi ] || {
-		logger -t "$NODE_QMI" "WARNING: UQMI not found in system!"
+		logger -t "$NODE" "WARNING: UQMI not found in system!"
 		return 1
 	}
 	check_mm
@@ -690,44 +608,21 @@ setup_mwan3(){
 
 
 # ============================================================
-# DETECT — count all modems in system
+# DETECT — calc modems
 # ============================================================
+
 count_xmm_modems(){
 	XMM_COUNT=0
 	for dev_base in ttyUSB ttyACM; do
 		dev_num=0
 		while true; do
-			dev="/dev/${dev_base}${dev_num}"
-			[ -e "$dev" ] || break
-			device_name="${dev_base}${dev_num}"
-			if [ -e "/sys/class/tty/${device_name}" ]; then
-				tty_path=$(readlink -f "/sys/class/tty/${device_name}" 2>/dev/null)
-				current_path="$tty_path"
-				interface_path=""
-				while [ -n "$current_path" ] && [ "$current_path" != "/" ]; do
-					if [ -f "${current_path}/bInterfaceNumber" ]; then
-						interface_path="$current_path"
-						break
-					fi
-					current_path=$(dirname "$current_path")
-				done
-				if [ -n "$interface_path" ]; then
-					usb_device_path=$(dirname "$interface_path")
-					while [ -n "$usb_device_path" ] && [ "$usb_device_path" != "/" ]; do
-						[ -f "${usb_device_path}/idVendor" ] && [ -f "${usb_device_path}/idProduct" ] && break
-						usb_device_path=$(dirname "$usb_device_path")
-					done
-					if [ -n "$usb_device_path" ] && [ "$usb_device_path" != "/" ]; then
-						vid=$(cat "${usb_device_path}/idVendor" 2>/dev/null)
-						pid=$(cat "${usb_device_path}/idProduct" 2>/dev/null)
-						iface=$(cat "${interface_path}/bInterfaceNumber" 2>/dev/null)
-						case ${vid}${pid} in
-							8087095a) [ "$iface" = "00" ] && XMM_COUNT=$((XMM_COUNT+1)) ;;
-							0e8d7126) [ "$iface" = "04" ] && XMM_COUNT=$((XMM_COUNT+1)) ;;
-							0e8d7127) [ "$iface" = "06" ] && XMM_COUNT=$((XMM_COUNT+1)) ;;
-						esac
-					fi
-				fi
+			[ -e "/dev/${dev_base}${dev_num}" ] || break
+			if get_tty_vidpid "${dev_base}${dev_num}"; then
+				case ${vid}${pid} in
+					8087095a) [ "$interface" = "00" ] && XMM_COUNT=$((XMM_COUNT+1)) ;;
+					0e8d7126) [ "$interface" = "04" ] && XMM_COUNT=$((XMM_COUNT+1)) ;;
+					0e8d7127) [ "$interface" = "06" ] && XMM_COUNT=$((XMM_COUNT+1)) ;;
+				esac
 			fi
 			dev_num=$((dev_num+1))
 		done
@@ -741,14 +636,17 @@ detect_modems(){
 	else
 		MM_COUNT=$(echo "$MM_LIST" | grep -c '/Modem/')
 	fi
-	
+
 	count_xmm_modems
 
 	TOTAL_MODEMS=$((MM_COUNT + XMM_COUNT))
-	logger -t "$NODE" "Detected modems: $TOTAL_MODEMS"
+	case $TOTAL_MODEMS in
+		0) logger -t "$NODE" "No modems were found" ;;
+		*) logger -t "$NODE" "Detected $TOTAL_MODEMS modem(s)" ;;
+	esac
 }
-# iface name
- make_ifname(){
+
+make_ifname(){
 	[ "$TOTAL_MODEMS" -eq "1" ] && ifmodemname=modem || ifmodemname=modem${mn}
 }
 
@@ -757,37 +655,59 @@ detect_modems(){
 # MAIN
 # ============================================================
 
-NODE=MODEMCONFIG
+NODE=modemconfig
 
 do_run(){
 	MWAN_IFACES=""
-	mn=1 
+	mn=1
+	SMS_CONFIGURED=0
 
 	case $board in
-		b4com,mcr100|\
-		b4com,mcr200)
-			TOTAL_MODEMS=0
+		b4com,mcr100|b4com,mcr200)
+			TOTAL_MODEMS=$(ls /sys/class/usbmisc/cdc-wdm* 2>/dev/null | wc -l)
+			logger -t "$NODE" "Detected $TOTAL_MODEMS QMI modem(s) on b4com board"
 			qmi_stuff
 		;;
 		*)
 			detect_modems
+
 			[ "$MM_COUNT" -gt "0" ] && {
 				mm_stuff
 			} || {
-				disable_mm
+				stop_services modemmanager
 			}
 
 			[ "$XMM_COUNT" -gt "0" ] && xmm_stuff
 		;;
 	esac
 
-	sleep 5
-	sleep 30
+	sleep 35
 	uci commit
 	reload_config
+
+	if [ "$SMS_CONFIGURED" -eq 0 ]; then
+		stop_services smstools3 luci-sms
+		logger -t "$NODE" "WARNING: No SMS ports configured"
+		logger -t "$NODE" "WARNING: SMS messaging functionality disabled."
+		logger -t "$NODE" "WARNING: Please manually configure service."
+	fi
+
+	[ "$HAS_L850" != "1" ] && [ -x /etc/init.d/fixmodem ] && /etc/init.d/fixmodem disable
+
+	if [ "$mn" -eq "1" ]; then
+		logger -t "$NODE" "WARNING: Any installed modems not supported by autoconfiguration."
+		logger -t "$NODE" "WARNING: Mobile services is stopped."
+		logger -t "$NODE" "WARNING: Please manually configure it."
+		stop_services smstools3 luci-sms modemmanager
+		atinout_cfg_l850
+		atinout_cfg_nl678
+		atinout_msg
+	else
+		logger -t "$NODE" "Modem interface(s) setup complete."
+	fi
+
 	setup_mwan3
 }
-
 
 SLEEP=120
 [ -f /etc/openwrt_release ] && {

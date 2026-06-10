@@ -1,0 +1,27 @@
+#!/bin/sh
+
+[ -f /etc/.config.lock ] && exit 0
+
+config_vpn(){
+uci batch << EOF
+set network.azp=interface
+set network.azp.proto='openvpn'
+set network.azp.dev_type='tun'
+set network.azp.mtu_disc='no'
+set network.azp.config='/etc/openvpn/azp/azp_config.cfg'
+set network.azp.metric='500'
+set network.azp.dns_metric='5'
+set network.azp.dev='azp0'
+set network.azp.defaultroute='0'
+set network.azp.disabled='1'
+EOF
+}
+
+[ -f /usr/share/vpn/antizapret-tcp.ovpn ] && {
+	mkdir -p /etc/openvpn/azp/
+	cp /usr/share/vpn/antizapret-tcp.ovpn /etc/openvpn/azp/azp_config.cfg
+	config_vpn
+	uci add_list firewall.@zone[1].network=azp
+}
+
+uci commit 
