@@ -1,0 +1,226 @@
+#!/bin/sh
+#
+# /etc/hotplug.d/usb/20-modem-ep-limit
+#
+# Limit USB endpoints for MediaTek MT7621 (hardware cap: ~11-12 EP).
+# Fires on ACTION=add for each USB interface node, reads bInterfaceNumber
+# from sysfs and disables interfaces not needed for the active protocol.
+#
+# Supported modems:
+#   413c:81d7  DELL DW5821e  (Snapdragon X20)   MBIM
+#   2cb7:0007  Fibocom L850-GL                   MBIM
+#   8087:095a  Fibocom L860-GL                   NCM + AT
+#   2c7c:0620  Quectel EM160R-GL                 QMI (RmNet + 1xAT)
+#   2c7c:0306  Quectel EP06-E                    QMI (RmNet + 1xAT)
+#   2cb7:0104  Fibocom NL678-E                   QMI (RmNet + 1xAT)
+#   1e2d:00b7  Gemalto/Cinterion Generic MBA     QMI (RmNet only)
+#
+# -----------------------------------------------------------------------
+# HOW TO ADD A NEW DEVICE
+# -----------------------------------------------------------------------
+# 1. Find VID:PID:
+#      lsusb | grep <modem name>
+#
+# 2. Dump interface list:
+#      lsusb -v -d VID:PID 2>/dev/null | \
+#        grep -E "bInterfaceNumber|bNumEndpoints|bInterfaceClass|\
+#bInterfaceSubClass|bInterfaceProtocol|iInterface"
+#
+# 3. Count total EPs (sum of bNumEndpoints). If <= 11 — no action needed.
+#
+# 4. Decide which interfaces to KEEP (minimum for your protocol):
+#      MBIM    : IF with Class=02/Sub=0e (control, 1 EP)
+#                + IF with Class=0a/Sub=00/Proto=02 (data, 2 EP)
+#      QMI     : IF with Class=ff/Sub=ff/Proto=ff (RmNet, 3 EP)
+#                + first IF with Class=ff/Sub=00/Proto=00 (AT, 3 EP)
+#      NCM+AT  : IF with Class=02/Sub=0d (NCM control, 1 EP)
+#                + IF with Class=0a/Sub=00/Proto=01 (NCM data, 2 EP)
+#                + IF with Class=02/Sub=02/Proto=01 (ACM Modem, 1 EP)
+#                + its paired Class=0a/Sub=02 data IF (2 EP)
+#
+# 5. Add a case block in modem_keep_iface() below.
+#    Use bInterfaceNumber values from lsusb output (decimal).
+#
+# 6. Add VID/PID to the case filter at the top of the script.
+#    Format: lowercase hex, 4 digits, slash-separated e.g. "2c7c/0306"
+#    Note: PRODUCT env uses no leading zeros in PID e.g. "2c7c/306"
+#    The script normalises both forms — add the 4-digit form to
+#    KNOWN_PRODUCTS and the normalised form to modem_keep_iface().
+#
+# 7. Test: logread -f  while replugging the modem.
+# -----------------------------------------------------------------------
+
+# Only handle interface add events — DEVPATH contains ":" for interfaces
+# e.g. /devices/.../1-1.3:1.4
+echo "$DEVPATH" | grep -q ":" || exit 0
+case "$ACTION" in
+    bind) ;;
+    *) exit 0 ;;
+esac
+
+TAG="modem-ep-limit"
+
+# Normalise PRODUCT: kernel sends "vvvv/pppp/rrrr" with no leading zeros
+# in pppp. We normalise to 4-digit lowercase e.g. "2c7c/0306"
+_vid=$(echo "$PRODUCT" | cut -d/ -f1)
+_pid_raw=$(echo "$PRODUCT" | cut -d/ -f2)
+_pid=$(printf "%04x" "0x${_pid_raw}")
+VIDPID="${_vid}/${_pid}"
+
+# -----------------------------------------------------------------------
+# Filter: only known modems
+# -----------------------------------------------------------------------
+case "$VIDPID" in
+    413c/81d7|\
+    2cb7/0007|\
+    2cb7/0104|\
+    8087/095a|\
+    2c7c/0620|\
+    2c7c/0306|\
+    1e2d/00b7)
+        ;;
+    *)
+        exit 0
+        ;;
+esac
+
+IFACE_PATH="/sys${DEVPATH}"
+[ -d "$IFACE_PATH" ] || exit 1
+
+# Read interface attributes from sysfs
+IFNUM=$(cat "${IFACE_PATH}/bInterfaceNumber" 2>/dev/null)
+CLS=$(cat "${IFACE_PATH}/bInterfaceClass" 2>/dev/null)
+SUB=$(cat "${IFACE_PATH}/bInterfaceSubClass" 2>/dev/null)
+PROTO=$(cat "${IFACE_PATH}/bInterfaceProtocol" 2>/dev/null)
+LABEL=$(cat "${IFACE_PATH}/iInterface" 2>/dev/null)
+
+[ -z "$IFNUM" ] && exit 0
+
+# Convert IFNUM from hex to decimal if needed (sysfs gives decimal)
+IFNUM=$((IFNUM))
+
+logger -t "$TAG" "$VIDPID IF${IFNUM} cls=${CLS} sub=${SUB} proto=${PROTO} '${LABEL}'"
+
+# -----------------------------------------------------------------------
+# modem_keep_iface: return 0 = keep, 1 = disable
+# -----------------------------------------------------------------------
+modem_keep_iface() {
+    case "$VIDPID" in
+
+        # ------------------------------------------------------------
+        # DELL DW5821e  413c:81d7  — MBIM
+        # Needs config 2 selected (see note below).
+        # IF0 = MBIM Control (02:0e:00)  1 EP
+        # IF1 = MBIM Data   (0a:00:02)  2 EP
+        # IF2,IF3 = AT ports             — disabled
+        # Total kept: 3 EP
+        # NOTE: DW5821e boots in config 1 (QMI). To use MBIM, select
+        # config 2 via usb_modeswitch or write to bConfigurationValue.
+        # This script assumes config 2 is already active.
+        # ------------------------------------------------------------
+        413c/81d7)
+            case "$IFNUM" in
+                0|1) return 0 ;;
+                *)   return 1 ;;
+            esac ;;
+
+        # ------------------------------------------------------------
+        # Fibocom L850-GL  2cb7:0007  — MBIM
+        # IF0 = MBIM Control (02:0e:00)  1 EP
+        # IF1 = MBIM Data   (0a:00:02)  2 EP  (altsetting 1 = ON)
+        # IF2-7 = three CDC ACM pairs    — disabled
+        # Total kept: 3 EP
+        # ------------------------------------------------------------
+        2cb7/0007)
+            case "$IFNUM" in
+                0|1) return 0 ;;
+                *)   return 1 ;;
+            esac ;;
+
+        # ------------------------------------------------------------
+        # Fibocom NL678-E  2cb7:0104  — QMI
+        # IF0 = QMI   (ff:ff:ff)  2 EP
+        # IF1 = AT    (ff:00:00)  3 EP  — keep first AT only
+        # IF2,IF3 = extra AT ports      — disabled
+        # IF4 = RmNet (ff:ff:ff)  3 EP
+        # IF5 = ADB   (ff:42:01)        — disabled
+        # Total kept: 8 EP
+        # ------------------------------------------------------------
+        2cb7/0104)
+            case "$IFNUM" in
+                0|1|4) return 0 ;;
+                *)     return 1 ;;
+            esac ;;
+
+        # ------------------------------------------------------------
+        # Fibocom L860-GL  8087:095a  — NCM + AT
+        # IF0 = CDC ACM (Modem) ctrl  (02:02:01)  1 EP
+        # IF1 = ACM data pair         (0a:02:00)  2 EP
+        # IF2,IF3 = second ACM pair               — disabled
+        # IF4,IF5 = third  ACM pair               — disabled
+        # IF6 = CDC NCM control       (02:0d:00)  1 EP
+        # IF7 = NCM data (ON)         (0a:00:01)  2 EP
+        # IF8-IF11 = two more NCM pairs           — disabled
+        # IF12 = Comneon Suspend                  — disabled
+        # Total kept: 6 EP
+        # ------------------------------------------------------------
+        8087/095a)
+            case "$IFNUM" in
+                0|1|6|7) return 0 ;;
+                *)        return 1 ;;
+            esac ;;
+
+        # ------------------------------------------------------------
+        # Quectel EM160R-GL  2c7c:0620  — QMI
+        # IF0 = DIAG  (ff:ff:30)  2 EP  — disabled
+        # IF1 = AT    (ff:00:00)  3 EP  — keep first AT only
+        # IF2,IF3 = extra AT ports      — disabled
+        # IF4 = RmNet (ff:ff:ff)  3 EP
+        # Total kept: 6 EP
+        # ------------------------------------------------------------
+        2c7c/0620)
+            case "$IFNUM" in
+                4|2|3) return 0 ;;
+                *)   return 1 ;;
+            esac ;;
+
+        # ------------------------------------------------------------
+        # Quectel EP06-E  2c7c:0306  — QMI
+        # IF0 = QMI   (ff:ff:ff)  2 EP
+        # IF1 = AT    (ff:00:00)  3 EP  — keep first AT only
+        # IF2,IF3 = extra AT ports      — disabled
+        # IF4 = RmNet (ff:ff:ff)  3 EP
+        # Total kept: 8 EP
+        # ------------------------------------------------------------
+        2c7c/0306)
+            case "$IFNUM" in
+                4|2|3) return 0 ;;
+                *)     return 1 ;;
+            esac ;;
+
+        # ------------------------------------------------------------
+        # Gemalto/Cinterion Generic MBA  1e2d:00b7  — QMI
+        # IF0 = RmNet (ff:ff:50)  3 EP
+        # IF1-4 = vendor-specific — disabled
+        # Total kept: 3 EP
+        # ------------------------------------------------------------
+        1e2d/00b7)
+            case "$IFNUM" in
+                0|1) return 0 ;;
+                *) return 1 ;;
+            esac ;;
+
+    esac
+    return 0
+}
+
+# -----------------------------------------------------------------------
+# Apply decision
+# -----------------------------------------------------------------------
+if modem_keep_iface; then
+    logger -t "$TAG" "KEEP IF${IFNUM} ($VIDPID)"
+else
+    logger -t "$TAG" "DISABLE IF${IFNUM} ($VIDPID)"
+    echo 0 > "${IFACE_PATH}/authorized" 2>/dev/null
+fi
+

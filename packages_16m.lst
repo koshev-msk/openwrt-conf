@@ -4,14 +4,15 @@ luci-app-modeminfo
 luci-app-mmconfig
 luci-app-smstools3
 luci-app-pingcontrol
-luci-app-sqm
+#luci-app-sqm
+luci-app-bandix-plus
 luci-app-atinout
 luci-app-3proxy
 #luci-app-openvpn
 #luci-app-https-dns-proxy
 luci-app-mwan3
 luci-app-mwan3-ledhelper
-#luci-app-ota
+luci-app-ota
 luci-app-commands
 #luci-app-telegrambot
 luci-app-ttl
@@ -58,7 +59,7 @@ modeminfo-serial-simcom
 modeminfo-serial-telit
 modeminfo-serial-thales
 modeminfo-serial-huawei
-modeminfo-telegram
+#modeminfo-telegram
 openvpn-openssl
 #openvpn-dns-hotplug
 xl2tpd
@@ -136,6 +137,7 @@ wpa-supplicant-openssl
 -dnsmasq
 dnsmasq-full
 ifmetric
+ipset
 # FS support
 e2fsprogs
 mkf2fs
@@ -164,3 +166,5 @@ natflow-boot
 mwan3-ledhelper
 # Geoip maxminddb parser
 maxminddb-dump-country
+#podkop
+#luci-app-podkop

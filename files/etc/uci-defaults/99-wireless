@@ -13,6 +13,7 @@ CC=RU
 config_wifi(){
 	B=$(echo ${BAND} | awk '{print toupper($0)}')
 	uci -q set wireless.radio${r}.country=$CC
+	uci -q set wireless.radio${r}.channel='auto'
 	uci -q set wireless.default_radio${r}.ssid=${MACHINE:=WIFI}_${B}_${SUFFIX:=$r}
 	uci -q delete wireless.radio${r}.disabled='1'
 }

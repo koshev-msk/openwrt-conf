@@ -5,6 +5,7 @@ luci-app-mmconfig
 luci-app-smstools3
 luci-app-pingcontrol
 luci-app-sqm
+#luci-app-bandix-plus
 luci-app-atinout
 #luci-app-https-dns-proxy
 luci-app-3proxy
@@ -21,7 +22,7 @@ luci-proto-amneziawg
 luci-proto-openvpn
 #luci-proto-mbim
 #luci-proto-qmi
-luci-proto-wireguard
+#luci-proto-wireguard
 #luci-proto-vpnc
 #luci-proto-openconnect
 #luci-proto-3g
@@ -59,7 +60,7 @@ modeminfo-serial-huawei
 #modeminfo-telegram
 openvpn-openssl
 #openvpn-dns-hotplug
-xl2tpd
+#xl2tpd
 # remove nft
 -firewall4
 -nftables
@@ -109,10 +110,10 @@ kmod-usb-storage
 kmod-usb2
 kmod-usb3
 kmod-ipt-ipopt
-kmod-l2tp
-kmod-l2tp-eth
-kmod-l2tp-ip
-kmod-pppol2tp
+#kmod-l2tp
+#kmod-l2tp-eth
+#kmod-l2tp-ip
+#kmod-pppol2tp
 kmod-pptp
 kmod-nf-nathelper-extra
 kmod-button-hotplug
@@ -137,21 +138,22 @@ wpad-basic-openssl
 -dnsmasq
 dnsmasq-full
 ifmetric
+ipset
 # FS support
-e2fsprogs
+#e2fsprogs
 mkf2fs
 cfdisk
-kmod-fs-ext4
+#kmod-fs-ext4
 kmod-fs-f2fs
-kmod-fs-vfat
+#kmod-fs-vfat
 block-mount
 # usb utilites
 #usbutils
 #uhubctl
 # MPTCP
 kmod-inet-mptcp-diag
-mptcpd
-mptcpize
+#mptcpd
+#mptcpize
 ip-full
 # NAT64 and DNS64
 kmod-nat64

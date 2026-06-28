@@ -156,6 +156,7 @@ BEGIN {
 
     print "config globals '\''globals'\''"
     print "    option mmx_mask '\''0x3F00'\''"
+    print "    option show_overview '\''1'\''"
     print ""
 
     n = NF

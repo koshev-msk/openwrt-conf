@@ -28,7 +28,11 @@ default_setup(){
 
 log_modem_found(){
 	logger -t "$NODE" "Found: $FAMILY (${VID}:${PID}) -> $ifmodemname data: ${DEVICE}"
-	logger -t "$NODE" "Ports at: /dev/${ATPORT} sms: /dev/${SMSPORT}"
+	[ ${SMSPORT} ] && {
+		logger -t "$NODE" "Ports at: /dev/${ATPORT} sms: /dev/${SMSPORT}"
+	} || {
+		logger -t "$NODE" "Ports at: /dev/${ATPORT}"
+	}
 }
 
 log_xmm_found(){
@@ -150,7 +154,7 @@ setup_pingcontrol(){
 	uci set pingcontrol.$ifmodemname.ping_silent='1'
 	uci set pingcontrol.$ifmodemname.iface=$ifmodemname
 	uci set pingcontrol.$ifmodemname.sw_before_modres='2'
-	uci set pingcontrol.$ifmodemname.sw_before_sysres='5'
+	uci set pingcontrol.$ifmodemname.sw_before_sysres='0'
 	uci set pingcontrol.$ifmodemname.testip='dns.yandex'
 }
 
@@ -240,21 +244,11 @@ configure_mm_uci(){
 			SIERRA|THALES) ATPORT=$(echo "$PORTS" | awk '{for (i=1; i<=NF; i++) if($i ~ /cdc-wdm/) {print $i; exit}}') ;;
 			*) ATPORT=$(echo "$PORTS" | awk '{ for (i=1; i<=NF; i++) { if ($(i+1) == "(at)") { print $i; break; }}}') ;;
 		esac
+
 		[ "x${m}" != "x" ] && [ "$NOT_SUPPORT_MM" = "0" ] && {
 			[ "$FAILED" = "--" ] && ENABLED=1 || ENABLED=0
-			setup_iface modemmanager $DEVICE
-			uci add_list network.$ifmodemname.allowedauth=none
-			uci set network.$ifmodemname.signalrate='10'
-			iface_mm_bearer
-			mmconfig_setup
-			setup_pingcontrol
-			uci add_list firewall.@zone[1].network=$ifmodemname
-			log_modem_found
-			logger -t "$NODE" "APN: ${APN}"
-		} || {
-			logger -t "$NODE" "WARNING: modem: ${VID}:${PID} not supported by modemmanager."
-			logger -t "$NODE" "WARNING: Please manualy configure interface."
 		}
+
 		! [ "$ATPORT" = "" ] && {
 			setup_modeminfo $ATPORT
 			case $ATPORT in
@@ -276,6 +270,22 @@ configure_mm_uci(){
 				;;
 			esac
 		}
+
+                [ "x${m}" != "x" ] && [ "$NOT_SUPPORT_MM" = "0" ] && {
+                        setup_iface modemmanager $DEVICE
+                        uci add_list network.$ifmodemname.allowedauth=none
+                        uci set network.$ifmodemname.signalrate='10'
+                        iface_mm_bearer
+                        mmconfig_setup
+                        setup_pingcontrol
+                        uci add_list firewall.@zone[1].network=$ifmodemname
+                        log_modem_found
+                        logger -t "$NODE" "APN: ${APN}"
+                } || {
+                        logger -t "$NODE" "WARNING: modem: ${VID}:${PID} not supported by modemmanager."
+                        logger -t "$NODE" "WARNING: Please manualy configure interface."
+                }
+
 		mn=$(($mn+1))
 		MWAN_IFACES="$MWAN_IFACES $ifmodemname"
 		unset ATPORT FAMILY
@@ -573,6 +583,9 @@ setup_mwan3(){
 			zbtlink,zbt-wg1608-16m|\
 			zbtlink,zbt-wg1608-32m)
 				LEDS="-l green:wwan"
+			;;
+			netis,n6)
+				LEDS="-l green:indicator"
 			;;
 			zbtlink,zbt-wg2107)
 				LEDS="-l green:wwan1 green:wwan2"
