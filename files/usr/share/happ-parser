@@ -1,0 +1,450 @@
+#!/bin/sh
+
+usage() {
+	cat <<EOF
+Usage:
+  $0 -u <url> -o <output_dir> [-p <proxy>]
+  $0 -s <subscription_file> -o <output_dir>
+  $0 -u <url> -c <output_file> [-p <proxy>]
+  $0 -s <subscription_file> -c <output_file>
+
+Options:
+  -u <url>              Get subscription from URL
+  -s <file>             Use existing subscription JSON
+  -o <directory>        Split subscription into separate configs
+  -c <file>             Build one combined Xray config
+  -p <proxy>            Proxy for subscription download (curl -x)
+  -h                    Show this help
+
+Examples:
+  $0 -u https://example.com/sub -c /tmp/xray.json
+  $0 -u https://example.com/sub -c /tmp/xray.json -p http://127.0.0.1:8080
+  $0 -u https://example.com/sub -c /tmp/xray.json -p socks5://127.0.0.1:1080
+  $0 -s /tmp/happ-sub -c /tmp/xray.json
+EOF
+	exit 1
+}
+
+URL=
+SUBSCRIBE=
+OUTPUT=
+COMBINED=
+PROXY=
+
+while getopts "u:s:o:c:p:h" opt; do
+	case "$opt" in
+		u) URL="$OPTARG" ;;
+		s) SUBSCRIBE="$OPTARG" ;;
+		o) OUTPUT="$OPTARG" ;;
+		c) COMBINED="$OPTARG" ;;
+		p) PROXY="$OPTARG" ;;
+		h) usage ;;
+		\?) usage ;;
+	esac
+done
+
+#
+# Exactly one input source.
+#
+if [ -n "$URL" ] && [ -n "$SUBSCRIBE" ]; then
+	echo "Error: -u and -s are mutually exclusive" >&2
+	exit 1
+fi
+
+if [ -z "$URL" ] && [ -z "$SUBSCRIBE" ]; then
+	echo "Error: one of -u or -s is required" >&2
+	exit 1
+fi
+
+#
+# Exactly one output mode.
+#
+if [ -n "$OUTPUT" ] && [ -n "$COMBINED" ]; then
+	echo "Error: -o and -c are mutually exclusive" >&2
+	exit 1
+fi
+
+if [ -z "$OUTPUT" ] && [ -z "$COMBINED" ]; then
+	echo "Error: one of -o or -c is required" >&2
+	exit 1
+fi
+
+#
+# Proxy is meaningful only when downloading the subscription.
+#
+if [ -n "$PROXY" ] && [ -z "$URL" ]; then
+	echo "Error: -p can only be used with -u" >&2
+	exit 1
+fi
+
+#
+# Get subscription.
+#
+if [ -n "$URL" ]; then
+	. /etc/openwrt_release
+	#DISTRIB_ID='OpenWrt'
+	#DISTRIB_RELEASE='24.10.6'
+	mac="$(cat /sys/class/net/eth0/address)"
+	model="$(awk '{print $1"/"$2}' /proc/device-tree/model)"
+
+	seed="${mac}|${model}"
+
+	hex="$(printf '%s' "$seed" | md5sum | cut -c1-32)"
+
+	# UUID v3 (MD5):
+	# version = 3
+	hex="$(printf '%s' "$hex" | sed \
+		-e 's/^\(........\)\(....\)\(....\)\(....\)\(............\)$/\1-\2-3\3-\4-\5/')"
+
+	# variant = RFC 4122
+	variant="$(printf '%s' "$hex" | cut -d- -f4)"
+	first="$(printf '%s' "$variant" | cut -c1)"
+	rest="$(printf '%s' "$variant" | cut -c2-)"
+	case "$first" in
+ 		0|1|2|3) first=8 ;;
+ 		4|5|6|7) first=9 ;;
+ 		8|9|a|b|A|B) first=b ;;
+ 		*) first=8 ;;
+	esac
+
+	HAPP_HWID="$(printf '%s' "$hex" | cut -d- -f1-3)-${first}${rest}-$(printf '%s' "$hex" | cut -d- -f5)"
+	INPUT=$(mktemp) || exit 1
+
+	cleanup() {
+		rm -f "$INPUT"
+		[ -n "$TMPDIR" ] && rm -rf "$TMPDIR"
+	}
+
+	trap cleanup EXIT
+
+	if [ -n "$PROXY" ]; then
+		PROXY_ARGS="-x $PROXY"
+	fi
+	curl -L -sS -H "X-HWID:${HAPP_HWID}" -H "User-Agent:Happ/3.26.1" -H "Accept:text/plain" $PROXY_ARGS \
+		-H "X-Device-Model:${model}" -H "X-Device-Os:${DISTRIB_ID}/${DISTRIB_RELEASE}" -H "X-Ver-Os:$(uname -ro)" \
+		-D /tmp/happ-headers2 \
+		"$URL" \
+		-o "$INPUT" || {
+			echo "Error: failed to download subscription" >&2
+			exit 1
+		}
+else
+	INPUT="$SUBSCRIBE"
+fi
+
+#
+# Check input file.
+#
+[ -f "$INPUT" ] || {
+	echo "Error: subscription file not found: $INPUT" >&2
+	exit 1
+}
+
+#
+# Check JSON.
+#
+jsonfilter -i "$INPUT" -e '@' >/dev/null 2>&1 || {
+	echo "Error: invalid subscription JSON: $INPUT" >&2
+	exit 1
+}
+
+#
+# Old mode:
+# split subscription into individual configs.
+#
+if [ -n "$OUTPUT" ]; then
+	mkdir -p "$OUTPUT" || exit 1
+
+	count=$(jsonfilter -i "$INPUT" -e '@[*]' | wc -l)
+
+	i=0
+	while [ "$i" -lt "$count" ]; do
+		jsonfilter -i "$INPUT" -e "@[$i]" > "$OUTPUT/$i.json" || exit 1
+		i=$((i + 1))
+	done
+
+	echo "Parsed $count configs into $OUTPUT"
+	exit 0
+fi
+
+#
+# Combined mode.
+#
+
+TMPDIR=$(mktemp -d) || exit 1
+
+cleanup() {
+	rm -f "$INPUT"
+	rm -rf "$TMPDIR"
+}
+
+trap cleanup EXIT
+
+#
+# Extract common parts from the first HAPP config.
+#
+DNS="$TMPDIR/dns.json"
+INBOUNDS="$TMPDIR/inbounds.json"
+RULES="$TMPDIR/rules.json"
+
+jsonfilter -i "$INPUT" -e '@[0].dns' > "$DNS" || exit 1
+jsonfilter -i "$INPUT" -e '@[0].inbounds' > "$INBOUNDS" || exit 1
+jsonfilter -i "$INPUT" -e '@[0].routing.rules' > "$RULES" || exit 1
+
+#
+# Number of configs in subscription.
+#
+CONFIG_COUNT=$(jsonfilter -i "$INPUT" -e '@[*]' | wc -l)
+
+#
+# Collect VLESS outbounds.
+#
+OUTBOUND_DIR="$TMPDIR/outbounds"
+mkdir -p "$OUTBOUND_DIR" || exit 1
+
+#
+# Unique server endpoints: address + port.
+#
+SEEN_ENDPOINTS="$TMPDIR/seen-endpoints"
+: > "$SEEN_ENDPOINTS"
+
+CONFIG_INDEX=0
+PROXY_INDEX=0
+
+while [ "$CONFIG_INDEX" -lt "$CONFIG_COUNT" ]; do
+
+	OUTBOUND_COUNT=$(
+		jsonfilter -i "$INPUT" \
+			-e "@[$CONFIG_INDEX].outbounds[*]" |
+			wc -l
+	)
+
+	OUTBOUND_INDEX=0
+
+	while [ "$OUTBOUND_INDEX" -lt "$OUTBOUND_COUNT" ]; do
+
+		OUTBOUND="$TMPDIR/outbound.json"
+
+		jsonfilter -i "$INPUT" \
+			-e "@[$CONFIG_INDEX].outbounds[$OUTBOUND_INDEX]" \
+			> "$OUTBOUND" || exit 1
+
+		PROTOCOL=$(jsonfilter -i "$OUTBOUND" -e '@.protocol' 2>/dev/null)
+
+		if [ "$PROTOCOL" = "vless" ]; then
+
+			#
+			# Deduplicate by VLESS server address + port.
+			#
+			ADDRESS=$(jsonfilter -i "$OUTBOUND" \
+				-e '@.settings.vnext[0].address' 2>/dev/null)
+
+			PORT=$(jsonfilter -i "$OUTBOUND" \
+				-e '@.settings.vnext[0].port' 2>/dev/null)
+
+			[ -n "$ADDRESS" ] || {
+				echo "Error: VLESS outbound has no server address" >&2
+				exit 1
+			}
+
+			[ -n "$PORT" ] || {
+				echo "Error: VLESS outbound has no server port" >&2
+				exit 1
+			}
+
+			ENDPOINT="${ADDRESS}|${PORT}"
+
+			if grep -F -x -q "$ENDPOINT" "$SEEN_ENDPOINTS"; then
+				echo "Skipping duplicate VLESS: $ADDRESS:$PORT"
+				OUTBOUND_INDEX=$((OUTBOUND_INDEX + 1))
+				continue
+			fi
+
+			printf '%s\n' "$ENDPOINT" >> "$SEEN_ENDPOINTS"
+
+			PROXY_INDEX=$((PROXY_INDEX + 1))
+
+			#
+			# HAPP outbound objects have "tag" as their first field.
+			# Rename only that field.
+			#
+			sed \
+				"s/^{[[:space:]]*\"tag\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/{\"tag\": \"proxy-$PROXY_INDEX\"/" \
+				"$OUTBOUND" \
+				> "$OUTBOUND_DIR/$PROXY_INDEX.json" || exit 1
+
+			#
+			# Guard: fail loudly instead of shipping a duplicate tag
+			# if the anchor above ever fails to match for some reason.
+			#
+			grep -q "\"tag\": \"proxy-$PROXY_INDEX\"" \
+				"$OUTBOUND_DIR/$PROXY_INDEX.json" || {
+					echo "Error: failed to rename tag for outbound #$PROXY_INDEX" >&2
+					exit 1
+				}
+		fi
+
+		OUTBOUND_INDEX=$((OUTBOUND_INDEX + 1))
+	done
+
+	CONFIG_INDEX=$((CONFIG_INDEX + 1))
+done
+
+#
+# At least one VLESS outbound is required.
+#
+[ "$PROXY_INDEX" -gt 0 ] || {
+	echo "Error: no VLESS outbounds found" >&2
+	exit 1
+}
+
+#
+# Static direct outbound.
+#
+DIRECT='{
+	"protocol": "freedom",
+	"tag": "direct"
+}'
+
+#
+# Static block outbound.
+#
+BLOCK='{
+	"protocol": "blackhole",
+	"tag": "block"
+}'
+
+#
+# Static balancer.
+#
+# Every VLESS outbound is renamed to proxy-N,
+# therefore selector "proxy-" catches all of them.
+#
+BALANCER='{
+	"tag": "Super_Balancer",
+	"selector": [
+		"proxy-"
+	],
+	"strategy": {
+		"type": "leastLoad",
+		"settings": {
+			"maxRTT": "1s",
+			"expected": 2,
+			"baselines": [
+				"1s"
+			],
+			"tolerance": 0.01
+		}
+	},
+	"fallbackTag": "proxy-1"
+}'
+
+#
+# Build routing rules.
+#
+# jsonfilter gives us:
+#
+#   [ {...}, {...}, {...} ]
+#
+# Remove the closing ']' and append our final balancer rule.
+#
+RULES_BODY=$(cat "$RULES")
+RULES_BODY=${RULES_BODY%]}
+
+ROUTING_RULES="$TMPDIR/routing-rules.json"
+
+printf '%s' "$RULES_BODY" > "$ROUTING_RULES"
+
+cat >> "$ROUTING_RULES" <<EOF
+,
+	{
+		"type": "field",
+		"network": [
+			"tcp",
+			"udp"
+		],
+		"balancerTag": "Super_Balancer"
+	}
+]
+EOF
+
+#
+# Build outbounds array.
+#
+OUTBOUNDS="$TMPDIR/outbounds.json"
+
+printf '[\n' > "$OUTBOUNDS"
+
+I=1
+while [ "$I" -le "$PROXY_INDEX" ]; do
+
+	if [ "$I" -gt 1 ]; then
+		printf ',\n' >> "$OUTBOUNDS"
+	fi
+
+	cat "$OUTBOUND_DIR/$I.json" >> "$OUTBOUNDS"
+
+	I=$((I + 1))
+done
+
+printf ',\n' >> "$OUTBOUNDS"
+printf '%s,\n' "$DIRECT" >> "$OUTBOUNDS"
+printf '%s\n' "$BLOCK" >> "$OUTBOUNDS"
+printf ']\n' >> "$OUTBOUNDS"
+
+#
+# Build final Xray configuration.
+#
+{
+	printf '{\n'
+	printf '	"log": { "loglevel": "none" }'
+	printf ',\n'
+	
+	printf '	"dns": '
+	cat "$DNS"
+	printf ',\n'
+
+	printf '	"inbounds": '
+	cat "$INBOUNDS"
+	printf ',\n'
+
+	printf '	"outbounds": '
+	cat "$OUTBOUNDS"
+	printf ',\n'
+
+	printf '	"routing": {\n'
+
+	printf '		"domainMatcher": "hybrid",\n'
+	printf '		"domainStrategy": "AsIs",\n'
+
+	printf '		"rules": '
+	cat "$ROUTING_RULES"
+	printf ',\n'
+
+	printf '		"balancers": [\n'
+	printf '%s\n' "$BALANCER"
+	printf '		]\n'
+
+	printf '	},\n'
+
+	printf '	"burstObservatory": '
+	jsonfilter -i "$INPUT" -e '@[0].burstObservatory'
+
+	printf '\n}\n'
+} > "$COMBINED"
+
+#
+# Validate resulting JSON.
+#
+jsonfilter -i "$COMBINED" -e '@' >/dev/null 2>&1 || {
+	echo "Error: generated combined config is invalid JSON" >&2
+	echo "Output was: $COMBINED" >&2
+	exit 1
+}
+
+echo "Combined config created:"
+echo "  output:  $COMBINED"
+echo "  configs: $CONFIG_COUNT"
+echo "  VLESS:   $PROXY_INDEX"
+echo "  total:   $((PROXY_INDEX + 2)) outbounds"
+

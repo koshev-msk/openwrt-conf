@@ -1,0 +1,178 @@
+# ============================================================
+# COMMON — shared between 98-modemconfig-mm and 98-modemconfig-nomm
+# sourced via: . /usr/share/mmconfig-functions
+# ============================================================
+
+NODE="modemconfig"
+
+args(){
+	echo "$#"
+}
+
+# UCI init modeminfo and smstools3
+default_setup(){
+	uci set modeminfo.@general[0]=general
+	uci set modeminfo.@general[0].index='1'
+	uci set modeminfo.@general[0].decimail='1'
+	uci set smstools3.@sms[0]=sms
+	uci set smstools3.@sms[0].decode_utf='1'
+	uci set smstools3.@sms[0].storage='temporary'
+	uci set smstools3.@sms[0].loglevel='5'
+}
+
+log_modem_found(){
+	logger -t "$NODE" "Found: $FAMILY (${VID}:${PID}) -> $ifmodemname data: ${DEVICE}"
+	[ ${SMSPORT} ] && {
+		logger -t "$NODE" "Ports at: /dev/${ATPORT} sms: /dev/${SMSPORT}"
+	} || {
+		logger -t "$NODE" "Ports at: /dev/${ATPORT}"
+	}
+}
+
+# SIM error
+log_sim_missing(){
+	logger -t "$NODE" "WARNING: $ifmodemname SIM is missing or not ready. Disabled:"
+	logger -t "$NODE" "WARNING:   - network interface bring up"
+	logger -t "$NODE" "WARNING:   - SMS messaging"
+	logger -t "$NODE" "WARNING:   - ping alive link"
+	logger -t "$NODE" "WARNING: Fix SIM issue and configure manually, or reset to defaults."
+}
+
+resolve_apn(){
+	local plmn="$1"
+	case $plmn in
+		25001) APN=internet.mts.ru ;;
+		25011) APN=internet.yota ;;
+		25020) APN=internet.tele2.ru ;;
+		25099) APN=internet.beeline.ru ;;
+		*)     APN=internet ;;
+	esac
+}
+
+setup_modeminfo(){
+	local port="$1"
+	uci add modeminfo modeminfo
+	case $port in
+		*ttyUSB*|*ttyACM*)
+			uci set modeminfo.@modeminfo[-1].device=/dev/${port}
+			case $FAMILY in
+				*DELL*|*QUALCOMM*) uci set modeminfo.@modeminfo[-1].mmcli_name=1 ;;
+			esac
+		;;
+		*cdc-wdm*)
+			uci set modeminfo.@modeminfo[-1].qmi_mode=1
+			uci set modeminfo.@modeminfo[-1].qmi_proxy=1
+			uci set modeminfo.@modeminfo[-1].device_qmi=/dev/${port}
+		;;
+	esac
+}
+
+setup_smstools3(){
+	local port="$1"
+	uci set smstools3.$ifmodemname=modem
+	uci set smstools3.$ifmodemname.device=/dev/${port}
+	[ "$ENABLED" = "1" ] && uci set smstools3.$ifmodemname.enable=1
+	SMS_CONFIGURED=1
+}
+
+setup_pingcontrol(){
+	uci set pingcontrol.$ifmodemname=pingcontrol
+	[ "$ENABLED" = "1" ] && uci set pingcontrol.$ifmodemname.enabled='1'
+	uci set pingcontrol.$ifmodemname.check_period='60'
+	uci set pingcontrol.$ifmodemname.ping_silent='1'
+	uci set pingcontrol.$ifmodemname.iface=$ifmodemname
+	uci set pingcontrol.$ifmodemname.sw_before_modres='2'
+	uci set pingcontrol.$ifmodemname.sw_before_sysres='0'
+	uci set pingcontrol.$ifmodemname.testip='dns.yandex'
+}
+
+setup_iface(){
+	local proto="$1"
+	local dev="$2"
+	uci set network.$ifmodemname=interface
+	uci set network.$ifmodemname.proto=$proto
+	uci set network.$ifmodemname.device=$dev
+	uci set network.$ifmodemname.apn=$APN
+	uci set network.$ifmodemname.metric=${mn}00
+	uci set network.$ifmodemname.dns_metric='10'
+	[ "$ENABLED" = "1" ] || uci set network.$ifmodemname.disabled='1'
+	uci add_list firewall.@zone[1].network=$ifmodemname
+	case $proto in
+		modemmanager|qmi) uci set network.$ifmodemname.iptype=ipv4 ;;
+		xmm)              uci set network.$ifmodemname.pdp=ipv4 ;;
+	esac
+}
+
+make_ifname(){
+	[ "$TOTAL_MODEMS" -eq "1" ] && ifmodemname=modem || ifmodemname=modem${mn}
+}
+
+stop_services(){
+	for svc in "$@"; do
+		[ -x /etc/init.d/${svc} ] || continue
+		/etc/init.d/${svc} stop
+		/etc/init.d/${svc} disable
+	done
+}
+
+setup_mwan3(){
+	[ -x /usr/sbin/mwan3 -a -x /usr/share/mwan3_gen.sh ] && {
+		logger -t "$NODE" "Generate config for MWAN3."
+		MODEMLEN=$(uci show network | awk '/modem/ && /interface/{len++} END {print len}')
+		if [ "$MODEMLEN" -eq "1" ]; then
+			MWAN3_POLICY="default"
+		elif [ "$MODEMLEN" -ge "2" ]; then
+			MWAN3_POLICY="balanced"
+		fi
+		case $board in
+			beeline,smartbox-turbo-plus|\
+			beeline,smartbox-giga|\
+			beeline,smartbox-flash)
+				LEDS="-l blue:wan -o red:status"
+			;;
+			cudy,tr3000-v1)
+				LEDS="-l white:status -o red:power"
+			;;
+			huastlink,hc-g60)
+				LEDS="-l blue:status -o green:status"
+			;;
+			huastlink,hc-g60-v1|\
+			huastlink,hc-g80|\
+			zbtlink,zbt-wg1608-16m|\
+			zbtlink,zbt-wg1608-32m)
+				LEDS="-l green:wwan"
+			;;
+			netis,n6)
+				LEDS="-l green:indicator"
+			;;
+			zbtlink,zbt-wg2107)
+				LEDS="-l green:wwan1 green:wwan2"
+			;;
+			zbtlink,zbt-cpe2801-32m)
+				LEDS="-l green:wwan1 green:wwan2"
+				PORT_WAN=0
+			;;
+			zbtlink,zbt-z8102ax-nand-64m|\
+			zbtlink,zbt-z8102ax-nand-all|\
+			zbtlink,zbt-z8102ax-v2|\
+			zbtlink,zbt-z8102ax-emmc)
+				LEDS="-l blue:usb-0 blue:usb-1"
+			;;
+			zbtlink,zbt-z8109ax-nand-64m|\
+			zbtlink,zbt-z8109ax-nand-128m|\
+			zbtlink,zbt-z8109ax-nand-all)
+				LEDS="-l green:modem1 green:modem2 green:modem3 green:modem4"
+			;;
+			*) LEDS="false" ;;
+		esac
+		[ "$LEDS" != "false" -a -x /usr/share/mwan3_led_config.sh ] && {
+			/usr/share/mwan3_led_config.sh -i ${MWAN_IFACES:=modem} ${LEDS} > /etc/config/mwan3_led
+		} || {
+			> /etc/config/mwan3_led
+		}
+		[ "$PORT_WAN" = "0" ] || MWAN_IFACES="wan $MWAN_IFACES"
+		/usr/share/mwan3_gen.sh -i ${MWAN_IFACES:=modem} -p $MWAN3_POLICY > /etc/config/mwan3
+		logger -t "$NODE" "MWAN3: default policy is \"$MWAN3_POLICY\". Restart service to take effect."
+		/etc/init.d/mwan3 restart
+	}
+}
