@@ -15,11 +15,20 @@ config_wifi(){
 	uci -q set wireless.radio${r}.country=$CC
 	uci -q set wireless.radio${r}.channel='auto'
 	uci -q set wireless.default_radio${r}.ssid=${MACHINE:=WIFI}_${B}_${SUFFIX:=$r}
-	uci -q delete wireless.radio${r}.disabled='1'
+	uci -q get wireless.radio${r}.disabled >/dev/null && uci -q delete wireless.radio${r}.disabled
+	uci -q get wireless.default_radio${r}.disabled >/dev/null && uci -q delete wireless.default_radio${r}.disabled
 }
 
 # 5 radios enough devices :)
 enable_wifi(){
+
+	local i=0
+	# More chips slowly start radio
+	until uci -q get wireless.radio0 >/dev/null || [ $i -ge 120 ]; do
+		i=$((i+1))
+		sleep 2
+	done
+
 	for r in $(seq 0 5); do
 		BAND=$(uci -q get wireless.radio${r}.band)
 		case $BAND in
@@ -38,5 +47,4 @@ enable_wifi(){
 	wifi
 }
 
-# More chips slowly start radio
-sleep 30 && enable_wifi &
+enable_wifi &

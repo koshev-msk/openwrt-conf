@@ -8,6 +8,7 @@
 
 # genetate ula prefix from default ll address
 ula=$(awk -F [:] '{print "fc00:" tolower($3$4) ":" tolower($5$6) "::/48"}' /sys/class/net/eth0/address)
+lanip=$(uci -q get network.lan.ipaddr)
 # config network
 uci batch << EOF
 delete network.wan6
@@ -17,7 +18,7 @@ del dhcp.lan.ra
 del dhcp.lan.ra_slaac
 del dhcp.lan.ra_flags
 del dhcp.lan.dhcpv6
-add_list dhcp.@dnsmasq[-1].address=/router.lan/$(uci -q get network.lan.ipaddr)
+add_list dhcp.@dnsmasq[-1].address=/router.lan/${lanip%%/*}
 EOF
 
 
@@ -58,9 +59,16 @@ setup_iface(){
 		zbtlink,zbt-cpe2801-32m)
 			# Assign WAN port to LAN
 			uci del network.wan
-			uci del network.@switch_vlan[1]
-			uci set network.@device[0].ports='eth0.1'
-			uci set network.@switch_vlan[0].ports='3 4 6t'
+			# if use gsw switch map
+			[ -x /sbin/swconfig ] && {
+				uci del network.@switch_vlan[1]
+				uci set network.@device[0].ports='eth0.1'
+				uci set network.@switch_vlan[0].ports='3 4 6t'
+			# if use DSA switch map
+			} || {
+				uci del network.@device[1]
+				uci add_list network.@device[0].ports='wan'
+			}
 		;;
 	esac
 }

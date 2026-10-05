@@ -9,16 +9,19 @@ luci-app-sqm
 luci-app-atinout
 #luci-app-https-dns-proxy
 luci-app-3proxy
-luci-app-mwan3
-luci-app-mwan3-ledhelper
-luci-app-ota
+luci-app-mwan3-nft
+luci-app-mwan3-ledhelper-nft
+#luci-app-ota
 luci-app-commands
 #luci-app-telegrambot
 luci-app-ttl
 #luci-app-ttyd
 # Network proto
 #luci-proto-xmm
+<<<<<<< HEAD
 luci-proto-amneziawg
+=======
+>>>>>>> baec47f (update_conf)
 luci-proto-openvpn
 #luci-proto-mbim
 #luci-proto-qmi
@@ -58,45 +61,19 @@ modeminfo-serial-telit
 modeminfo-serial-thales
 modeminfo-serial-huawei
 #modeminfo-telegram
+<<<<<<< HEAD
 openvpn-mbedtls
+=======
+openvpn-mbedtls-xor
+>>>>>>> baec47f (update_conf)
 #openvpn-dns-hotplug
 #xl2tpd
-# remove nft
--firewall4
--nftables
--nftables-json
--kmod-nft-core
--kmod-nft-fib
--kmod-nft-nat 
--kmod-nft-offload
 # remove mbedtls
 #-libustream-mbedtls
 #-libmbedtls12
 #-libmbedtls21
 #-libustream-mbedtls20201210
 # add iptables
-firewall
-kmod-ip6tables
-kmod-ipt-conntrack
-kmod-ipt-core
-kmod-ipt-nat
-kmod-ipt-nat6
-kmod-ipt-offload
-kmod-ipt-nfqueue
-kmod-ipt-conntrack-extra
-kmod-nf-ipt
-kmod-nf-ipt6
-kmod-ipt-raw
-kmod-ipt-raw6
-kmod-ipt-tls
-kmod-ipt-geoip
-ip6tables-zz-legacy
-iptables-zz-legacy
-iptables-mod-nfqueue
-iptables-mod-conntrack-extra
-iptables-mod-tls
-iptables-mod-geoip
-iptables-mod-ipopt
 # kernel mod's
 kmod-nfnetlink-queue
 kmod-usb-serial-qualcomm
@@ -110,7 +87,6 @@ kmod-usb-net-cdc-mbim
 kmod-usb-storage
 kmod-usb2
 kmod-usb3
-kmod-ipt-ipopt
 #kmod-l2tp
 #kmod-l2tp-eth
 #kmod-l2tp-ip
@@ -119,13 +95,11 @@ kmod-pptp
 kmod-nf-nathelper-extra
 kmod-button-hotplug
 # AmneziaWG VPN kmod
-kmod-amneziawg
+#kmod-amneziawg
 # wireless
 #wpad-basic-openssl
 # PPP
 ppp-mod-pptp
-# iptables 
-iptables-mod-ipopt
 # libraries
 lib3proxy
 # removed pkgs.
@@ -150,18 +124,16 @@ block-mount
 #usbutils
 #uhubctl
 # MPTCP
-kmod-inet-mptcp-diag
+#kmod-inet-mptcp-diag
 #mptcpd
 #mptcpize
 ip-full
 # NAT64 and DNS64
-kmod-nat64
-totd
-natflow-boot
+#totd
 # SNI
 #youtubeUnblock
 #luci-app-youtubeUnblock
 # LED
-mwan3-ledhelper
+#mwan3-ledhelper
 # Geoip maxminddb parser
-maxminddb-dump-country
+#maxminddb-dump-country

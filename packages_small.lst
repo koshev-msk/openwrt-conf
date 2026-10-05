@@ -2,13 +2,18 @@
 luci
 luci-app-modeminfo
 #luci-app-mmconfig
+<<<<<<< HEAD
 luci-app-smstools3
+=======
+#luci-app-smstools3
+>>>>>>> baec47f (update_conf)
 luci-app-pingcontrol
 #luci-app-sqm
 #luci-app-bandix-plus
 luci-app-atinout
 #luci-app-https-dns-proxy
 #luci-app-3proxy
+<<<<<<< HEAD
 #luci-app-mwan3
 #luci-app-mwan3-ledhelper
 luci-app-ota
@@ -19,6 +24,19 @@ luci-app-ttl
 # Network proto
 luci-proto-xmm
 #luci-proto-amneziawg
+=======
+luci-app-mwan3-nft
+#luci-app-mwan3-ledhelper
+#luci-app-ota
+#luci-app-commands
+#luci-app-telegrambot
+luci-app-ttl
+#luci-app-pbr
+#luci-app-ttyd
+# Network proto
+luci-proto-xmm
+luci-proto-amneziawg
+>>>>>>> baec47f (update_conf)
 #luci-proto-openvpn
 luci-proto-mbim
 luci-proto-qmi
@@ -61,6 +79,7 @@ modeminfo-serial-huawei
 #openvpn-mbedtls
 #openvpn-dns-hotplug
 #xl2tpd
+<<<<<<< HEAD
 # remove nft
 -firewall4
 -nftables
@@ -69,11 +88,14 @@ modeminfo-serial-huawei
 -kmod-nft-fib
 -kmod-nft-nat 
 -kmod-nft-offload
+=======
+>>>>>>> baec47f (update_conf)
 # remove mbedtls
 #-libustream-mbedtls
 #-libmbedtls12
 #-libmbedtls21
 #-libustream-mbedtls20201210
+<<<<<<< HEAD
 # add iptables
 firewall
 kmod-ip6tables
@@ -97,6 +119,8 @@ iptables-mod-conntrack-extra
 #iptables-mod-tls
 #iptables-mod-geoip
 iptables-mod-ipopt
+=======
+>>>>>>> baec47f (update_conf)
 # kernel mod's
 #kmod-nfnetlink-queue
 kmod-usb-serial-qualcomm
@@ -109,29 +133,46 @@ kmod-usb-net-qmi-wwan
 kmod-usb-net-cdc-mbim
 #kmod-usb-storage
 kmod-usb2
+<<<<<<< HEAD
 #kmod-usb3
 kmod-ipt-ipopt
+=======
+>>>>>>> baec47f (update_conf)
 #kmod-l2tp
 #kmod-l2tp-eth
 #kmod-l2tp-ip
 #kmod-pppol2tp
 #kmod-pptp
+<<<<<<< HEAD
 kmod-nf-nathelper-extra
 #kmod-button-hotplug
 # AmneziaWG VPN kmod
 #kmod-amneziawg
+=======
+#kmod-nf-nathelper-extra
+#kmod-button-hotplug
+# AmneziaWG VPN kmod
+kmod-amneziawg
+>>>>>>> baec47f (update_conf)
 # wireless
 #wpad-basic-openssl
 # PPP
 #ppp-mod-pptp
+<<<<<<< HEAD
 # iptables 
 iptables-mod-ipopt
+=======
+>>>>>>> baec47f (update_conf)
 # libraries
 #lib3proxy
 # removed pkgs.
 -wpad-basic-mbedtls
 -ppp
 -ppp-mod-pppoe
+<<<<<<< HEAD
+=======
+-uclient-fetch
+>>>>>>> baec47f (update_conf)
 #hostapd-mbedtls
 wpad-mini
 #wpa-supplicant-mbedtls
@@ -139,7 +180,11 @@ wpad-mini
 # replace to dnsmasq ipset
 #-dnsmasq
 #dnsmasq-full
+<<<<<<< HEAD
 #ifmetric
+=======
+ifmetric
+>>>>>>> baec47f (update_conf)
 #ipset
 # FS support
 #e2fsprogs

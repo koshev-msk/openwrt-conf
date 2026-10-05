@@ -126,13 +126,17 @@ fi
 lan_ipaddr=$(uci -q get network."$LAN_INTERFACE".ipaddr)
 lan_netmask=$(uci -q get network."$LAN_INTERFACE".netmask)
 
-if [ -z "$lan_ipaddr" ] || [ -z "$lan_netmask" ]; then
+if [ -z "$lan_ipaddr" ]; then
     echo "Error: LAN interface '$LAN_INTERFACE' does not have IP address or netmask configured" >&2
     echo "Please configure IP address for $LAN_INTERFACE interface first" >&2
     exit 1
 fi
 
-eval $(ipcalc.sh "$lan_ipaddr" "$lan_netmask")
+if [ "$lan_netmask" ]; then
+    eval $(ipcalc.sh "$lan_ipaddr" "$lan_netmask")
+else
+    eval $(ipcalc.sh "$lan_ipaddr")
+fi
 
 if [ -z "$NETWORK" ] || [ -z "$PREFIX" ]; then
     echo "Error: Failed to calculate network address for $LAN_INTERFACE" >&2
