@@ -18,10 +18,6 @@ luci-app-ttl
 #luci-app-ttyd
 # Network proto
 #luci-proto-xmm
-<<<<<<< HEAD
-luci-proto-amneziawg
-=======
->>>>>>> baec47f (update_conf)
 luci-proto-openvpn
 #luci-proto-mbim
 #luci-proto-qmi
@@ -61,11 +57,7 @@ modeminfo-serial-telit
 modeminfo-serial-thales
 modeminfo-serial-huawei
 #modeminfo-telegram
-<<<<<<< HEAD
-openvpn-mbedtls
-=======
 openvpn-mbedtls-xor
->>>>>>> baec47f (update_conf)
 #openvpn-dns-hotplug
 #xl2tpd
 # remove mbedtls
