@@ -16,26 +16,23 @@ luci-app-atinout
 #luci-app-telegrambot
 luci-app-ttl
 #luci-app-ttyd
-# Network proto
-luci-proto-xmm
-luci-proto-amneziawg
-luci-app-mwan3-nft
+#luci-app-mwan3-nft
 #luci-app-mwan3-ledhelper
 #luci-app-ota
 #luci-app-commands
 #luci-app-telegrambot
-luci-app-ttl
 #luci-app-pbr
 #luci-app-ttyd
 # Network proto
 luci-proto-xmm
+luci-proto-amneziawg
 #luci-proto-openvpn
 luci-proto-mbim
 luci-proto-qmi
 #luci-proto-wireguard
 #luci-proto-vpnc
 #luci-proto-openconnect
-luci-proto-3g
+#luci-proto-3g
 luci-proto-ncm
 #luci-proto-modemmanager
 # localize RU
@@ -68,7 +65,7 @@ modeminfo-serial-telit
 modeminfo-serial-thales
 modeminfo-serial-huawei
 #modeminfo-telegram
-#openvpn-mbedtls
+#openvpn-mbedtls-xor
 #openvpn-dns-hotplug
 #xl2tpd
 # remove nft
@@ -126,7 +123,7 @@ kmod-usb2
 #kmod-l2tp-ip
 #kmod-pppol2tp
 #kmod-pptp
-kmod-nf-nathelper-extra
+#kmod-nf-nathelper-extra
 #kmod-button-hotplug
 # AmneziaWG VPN kmod
 kmod-amneziawg
@@ -150,7 +147,7 @@ wpad-mini
 # replace to dnsmasq ipset
 #-dnsmasq
 #dnsmasq-full
-ifmetric
+#ifmetric
 #ipset
 # FS support
 #e2fsprogs
