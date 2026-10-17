@@ -4,14 +4,12 @@ luci-app-modeminfo
 luci-app-mmconfig
 luci-app-smstools3
 luci-app-pingcontrol
-luci-app-sqm
 #luci-app-bandix-plus
+luci-app-ifb-shaper
 luci-app-atinout
-#luci-app-https-dns-proxy
 luci-app-3proxy
 luci-app-mwan3-nft
 luci-app-mwan3-ledhelper-nft
-#luci-app-ota
 luci-app-commands
 #luci-app-telegrambot
 luci-app-ttl
@@ -27,6 +25,7 @@ luci-proto-openvpn
 #luci-proto-3g
 #luci-proto-ncm
 luci-proto-modemmanager
+luci-proto-amneziawg
 # localize RU
 #luci-i18n-base-ru
 #luci-i18n-modeminfo-ru
@@ -57,16 +56,10 @@ modeminfo-serial-telit
 modeminfo-serial-thales
 modeminfo-serial-huawei
 #modeminfo-telegram
+# OpenVPN
 openvpn-mbedtls-xor
-#openvpn-dns-hotplug
-#xl2tpd
-# remove mbedtls
-#-libustream-mbedtls
-#-libmbedtls12
-#-libmbedtls21
-#-libustream-mbedtls20201210
-# add iptables
-# kernel mod's
+# kernel modules
+kmod-amneziawg
 kmod-nfnetlink-queue
 kmod-usb-serial-qualcomm
 kmod-usb-serial-option
@@ -79,17 +72,9 @@ kmod-usb-net-cdc-mbim
 kmod-usb-storage
 kmod-usb2
 kmod-usb3
-#kmod-l2tp
-#kmod-l2tp-eth
-#kmod-l2tp-ip
-#kmod-pppol2tp
 kmod-pptp
 kmod-nf-nathelper-extra
 kmod-button-hotplug
-# AmneziaWG VPN kmod
-#kmod-amneziawg
-# wireless
-#wpad-basic-openssl
 # PPP
 ppp-mod-pptp
 # libraries
@@ -120,12 +105,8 @@ block-mount
 #mptcpd
 #mptcpize
 ip-full
-# NAT64 and DNS64
-#totd
-# SNI
-#youtubeUnblock
-#luci-app-youtubeUnblock
-# LED
-#mwan3-ledhelper
 # Geoip maxminddb parser
 #maxminddb-dump-country
+-uclient-fetch
+#forkop
+#luci-app-forkop

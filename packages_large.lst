@@ -4,17 +4,13 @@ luci-app-modeminfo
 luci-app-mmconfig
 luci-app-smstools3
 luci-app-pingcontrol
-#luci-app-sqm
-luci-app-bandix-plus
+#luci-app-bandix-plus
+luci-app-ifb-shaper
 luci-app-atinout
 luci-app-3proxy
-#luci-app-openvpn
-#luci-app-https-dns-proxy
 luci-app-mwan3-nft
 luci-app-mwan3-ledhelper-nft
-#luci-app-ota
 luci-app-commands
-#luci-app-telegrambot
 luci-app-ttl
 luci-app-ttyd
 # Network proto
@@ -61,44 +57,12 @@ modeminfo-serial-thales
 modeminfo-serial-huawei
 #modeminfo-telegram
 openvpn-openssl-xor
-#openvpn-dns-hotplug
 xl2tpd
-# remove nft
-#-firewall4
-#-nftables
-#-nftables-json
-#-kmod-nft-core
-#-kmod-nft-fib
-#-kmod-nft-nat 
-#-kmod-nft-offload
 # remove mbedtls
 -libustream-mbedtls
 #-libmbedtls12
 -libmbedtls21
 -libustream-mbedtls20201210
-# add iptables
-#firewall
-#kmod-ip6tables
-#kmod-ipt-conntrack
-#kmod-ipt-core
-#kmod-ipt-nat
-#kmod-ipt-nat6
-#kmod-ipt-offload
-#kmod-ipt-nfqueue
-#kmod-ipt-conntrack-extra
-#kmod-nf-ipt
-#kmod-nf-ipt6
-#kmod-ipt-raw
-#kmod-ipt-raw6
-#kmod-ipt-geoip
-#kmod-ipt-tls
-#ip6tables-zz-legacy
-#iptables-zz-legacy
-#iptables-mod-nfqueue
-#iptables-mod-conntrack-extra
-#iptables-mod-geoip
-#iptables-mod-tls
-#iptables-mod-ipopt
 # kernel mod's
 kmod-nfnetlink-queue
 kmod-usb-serial-qualcomm
@@ -112,7 +76,6 @@ kmod-usb-net-cdc-mbim
 kmod-usb-storage
 kmod-usb2
 kmod-usb3
-#kmod-ipt-ipopt
 kmod-l2tp
 kmod-l2tp-eth
 kmod-l2tp-ip
@@ -159,7 +122,7 @@ ip-full
 # NAT64 and DNS64
 #kmod-nat64
 #totd
-natflow-boot
+#natflow-boot
 # SNI
 #youtubeUnblock
 #luci-app-youtubeUnblock
@@ -167,8 +130,8 @@ natflow-boot
 mwan3-ledhelper-nft
 # Geoip maxminddb parser
 #maxminddb-dump-country
-#podkop
-#luci-app-podkop
+forkop
+luci-app-forkop
 # apk
 -apk-mbedtls
 apk-openssl
