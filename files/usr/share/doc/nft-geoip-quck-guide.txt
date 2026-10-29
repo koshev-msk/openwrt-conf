@@ -1,0 +1,52 @@
+nft_geoip — Quick Syntax Guide
+==============================
+
+BASIC SYNTAX
+------------
+
+    geoip saddr [!=] <COUNTRIES> <ACTION>
+    geoip daddr [!=] <COUNTRIES> <ACTION>
+
+- saddr matches the source IP address country.
+- daddr matches the destination IP address country.
+- != invert expression
+- COUNTRIES is one or more two-letter country codes, e.g. RU,CN,DE. Max 16 per line
+- ACTION can be an nftables verdict such as accept/drop, or a statement such as setting a packet mark.
+
+EXAMPLES
+--------
+
+Accept packets from Russia:
+
+    geoip saddr RU accept
+
+Drop packets destined for China or the United Kingdom:
+
+    geoip daddr CN,GB drop
+
+Set packet mark 0x10 for packets from Germany:
+
+    geoip saddr DE meta mark set 0x10
+
+Set packet mark 0x20 and accept packets from all except Latvia:
+
+    geoip saddr != LV meta mark set 0x20 accept
+
+EXAMPLE CHAIN
+-------------
+
+    chain geoip_filter {
+        type filter hook forward priority filter; policy accept;
+
+        geoip saddr CN,GB drop
+        geoip saddr DE meta mark set 0x10
+        geoip daddr RU accept
+    }
+
+NOTES
+-----
+
+- Country matching is based on the packet IP address.
+- accept and drop are verdicts that end evaluation of the current ruleset path.
+- meta mark set assigns a packet mark; by itself, it does not terminate processing.
+- This is a short syntax reference. Check the installed nft_geoip module version for exact syntax support.
