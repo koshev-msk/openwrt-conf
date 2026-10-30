@@ -108,7 +108,7 @@ while [ $# -gt 0 ]; do
 			if is_url "$1"; then
 				update "$1"
 			else
-				echo "ERROR: '$1' is not URL http(s)" >&2
+				echo "ERROR: \"$1\" is not URL http(s)" >&2
 				helpmsg
 				exit 1
 			fi
