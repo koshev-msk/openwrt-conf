@@ -1,6 +1,11 @@
 #!/bin/sh
 # update iptables GEOIP DB
 
+[ -x /usr/bin/xt_geoip_build ] || {
+	echo "maxminddb-dump-coutry package not found!"
+	exit 1
+}
+
 [ -d /usr/share/xt_geoip ] || {
 	mkdir -p /usr/share/xt_geoip
 	echo "Directory /usr/share/xt_geoip not exist!"
