@@ -16,6 +16,7 @@
 timestamp=$(date "+%Y-%m")
 csvdbname=dbip-country-lite-$timestamp.csv.gz
 mmdbname=GeoLite2-Country.mmdb
+ip2loc=geolite2-country-ipv${f}.csv
 
 download(){
 	url=$1
@@ -73,14 +74,20 @@ update(){
 
 helpmsg(){
 	echo "USAGE: `basename $0` -d or -m args"
-	echo -e "\t -d or --dbip - dowmload and update dbip database"
-	echo -e "\t -m or --maxmind - dowmload and update maxmind database"
+	echo -e "\t -d or --dbip - download and update dbip database"
+	echo -e "\t -m or --maxmind - download and update maxmind database"
+	echo -e "\t -i or --ip2location - download and update ip2location database"
 }
 
 for a in "$@"; do
 	case $a in
 		-d|--dbip) update https://download.db-ip.com/free/$csvdbname ;;
 		-m|--maxmind) update https://github.com/P3TERX/GeoLite.mmdb/raw/download/$mmdbname ;;
+		-i|--ip2location)
+			for f in 4 6; do
+				update https://github.com/sapics/ip-location-db/raw/refs/heads/main/geolite2-country/geolite2-country-ipv${f}.csv
+			done
+		;;
 		*) helpmsg ;;
 	esac
 done
