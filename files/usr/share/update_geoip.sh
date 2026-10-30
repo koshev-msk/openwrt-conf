@@ -73,7 +73,7 @@ update(){
 
 
 helpmsg(){
-	echo "USAGE: `basename $0` -d or -m args"
+	echo "USAGE: `basename $0` <arg>"
 	echo -e "\t -d or --dbip - download and update dbip database"
 	echo -e "\t -m or --maxmind - download and update maxmind database"
 	echo -e "\t -i or --ip2location - download and update ip2location database"
