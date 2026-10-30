@@ -64,10 +64,12 @@ update(){
 		*) exit 1
 	esac
 	# check files in dir
-	ls -1 /tmp/xt_geoip/*.iv* >/dev/null 2>&1 && \
-		cp -rp /tmp/xt_geoip/*.iv* /usr/share/xt_geoip || \
-		rm -rf /tmp/xt_geoip/ /tmp/geoipdb/ && \
+	if $(ls -1 /tmp/xt_geoip/*.iv* >/dev/null 2>&1); then
+		cp -rp /tmp/xt_geoip/*.iv* /usr/share/xt_geoip
+	else
+		rm -rf /tmp/xt_geoip/ /tmp/geoipdb/
 		exit 1
+	fi
 	rm -rf /tmp/xt_geoip/ /tmp/geoipdb/
 }
 
