@@ -76,7 +76,7 @@ for a in "$@"; do
 	case $a in
 		-d|--dbip) update https://download.db-ip.com/free/$csvdbname ;;
 		-m|--maxmind) update https://github.com/P3TERX/GeoLite.mmdb/raw/download/$mmdbname ;;
-		*) helpmsg
+		*) helpmsg ;;
 	esac
 done
 
