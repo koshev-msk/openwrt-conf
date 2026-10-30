@@ -18,6 +18,11 @@ csvdbname=dbip-country-lite-$timestamp.csv.gz
 mmdbname=GeoLite2-Country.mmdb
 ip2loc=geolite2-country-ipv${f}.csv
 
+# urls example
+
+
+
+
 download(){
 	url=$1
 	dest=$2
@@ -73,25 +78,46 @@ update(){
 	rm -rf /tmp/xt_geoip/ /tmp/geoipdb/
 }
 
-
-helpmsg(){
-	echo "USAGE: `basename $0` <arg>"
-	echo -e "\t -d or --dbip - download and update dbip database"
-	echo -e "\t -m or --maxmind - download and update maxmind database"
-	echo -e "\t -i or --ip2location - download and update ip2location database"
+is_url() {
+    case "$1" in
+ 	http://*|https://*) return 0 ;;
+	*) return 1 ;;
+    esac
 }
 
-for a in "$@"; do
-	case $a in
-		-d|--dbip) update https://download.db-ip.com/free/$csvdbname ;;
-		-m|--maxmind) update https://github.com/P3TERX/GeoLite.mmdb/raw/download/$mmdbname ;;
-		-i|--ip2location)
-			for f in 4 6; do
-				update https://github.com/sapics/ip-location-db/raw/refs/heads/main/geolite2-country/geolite2-country-ipv${f}.csv
-			done
-		;;
-		*) helpmsg ;;
-	esac
-done
 
+helpmsg(){
+	echo "USAGE: `basename $0` -s url"
+	echo -e "\t-s or --source - download and update database"
+	echo -e "\tsupported formats:"
+	echo -e "\t\t*.mmdb *.csv or *.csv.gz comressed"
+	echo -e "\turls example:"
+	echo -e "\t\thttps://download.db-ip.com/free/dbip-country-lite-\$(date \"+%Y-%m\").csv.gz"
+	echo -e "\t\thttps://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-Country.mmdb"
+}
+
+while [ $# -gt 0 ]; do
+	case "$1" in
+		-s|--source)
+			shift
+			if [ $# -eq 0 ]; then
+				echo "ERROR: $a need arg (URL)" >&2
+				helpmsg
+				exit 1
+			fi
+			if is_url "$1"; then
+				update "$1"
+			else
+				echo "ERROR: '$1' is not URL http(s)" >&2
+				helpmsg
+				exit 1
+			fi
+		;;
+		*)
+			helpmsg
+			exit 1
+		;;
+	esac
+	shift
+done
 
