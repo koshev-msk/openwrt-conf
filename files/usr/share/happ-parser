@@ -18,6 +18,9 @@ Options:
   -l <file>             Write share links (vless:// vmess:// ss://),
                         one per line; "-" means stdout
   -p <proxy>            Proxy for subscription download (curl -x)
+  -t <seconds>          Skip servers that fail a TCP connect check
+                        (curl, max <seconds> per server); with -c or -l.
+                        With -l the links are also sorted by connect time
   -h                    Show this help
 
 Examples:
@@ -26,6 +29,7 @@ Examples:
   $0 -u https://example.com/sub -c /tmp/xray.json -p socks5://127.0.0.1:1080
   $0 -s /tmp/happ-sub -c /tmp/xray.json
   $0 -s /tmp/happ-sub -l /tmp/links.txt
+  $0 -u https://example.com/sub -l /tmp/links.txt -t 3
 EOF
 	exit 1
 }
@@ -36,8 +40,9 @@ OUTPUT=
 COMBINED=
 LINKS=
 PROXY=
+CHECK=
 
-while getopts "u:s:o:c:l:p:h" opt; do
+while getopts "u:s:o:c:l:p:t:h" opt; do
 	case "$opt" in
 		u) URL="$OPTARG" ;;
 		s) SUBSCRIBE="$OPTARG" ;;
@@ -45,6 +50,7 @@ while getopts "u:s:o:c:l:p:h" opt; do
 		c) COMBINED="$OPTARG" ;;
 		l) LINKS="$OPTARG" ;;
 		p) PROXY="$OPTARG" ;;
+		t) CHECK="$OPTARG" ;;
 		h) usage ;;
 		\?) usage ;;
 	esac
@@ -87,6 +93,29 @@ fi
 if [ -n "$PROXY" ] && [ -z "$URL" ]; then
 	echo "Error: -p can only be used with -u" >&2
 	exit 1
+fi
+
+#
+# Reachability check needs a positive number of seconds,
+# and makes no sense when splitting into raw configs.
+#
+if [ -n "$CHECK" ]; then
+	case "$CHECK" in
+		*[!0-9]*|0|"")
+			echo "Error: -t needs a positive number of seconds" >&2
+			exit 1
+			;;
+	esac
+
+	if [ -n "$OUTPUT" ]; then
+		echo "Error: -t can only be used with -c or -l" >&2
+		exit 1
+	fi
+
+	command -v curl >/dev/null 2>&1 || {
+		echo "Error: -t requires curl" >&2
+		exit 1
+	}
 fi
 
 #
@@ -158,6 +187,34 @@ fi
 jsonfilter -i "$INPUT" -e '@' >/dev/null 2>&1 || {
 	echo "Error: invalid subscription JSON: $INPUT" >&2
 	exit 1
+}
+
+#
+# TCP reachability check (only when -t is given).
+#
+# BusyBox nc has no -w/-z on many builds, so use curl: time_connect is
+# 0 unless the TCP handshake completed. The request that follows does not
+# matter, -m just stops waiting for a reply from non-HTTP servers.
+#
+reachable() {
+	LAT_MS=0
+	[ -n "$CHECK" ] || return 0
+
+	case "$1" in
+		*:*) set -- "[$1]" "$2" ;;
+	esac
+
+	T=$(curl -s -o /dev/null -m "$CHECK" -w '%{time_connect}' \
+		"http://$1:$2/" 2>/dev/null)
+
+	case "$T" in
+		""|0|0.000000) return 1 ;;
+	esac
+
+	# TCP connect time in whole milliseconds, used for sorting.
+	LAT_MS=$(awk -v t="$T" 'BEGIN { printf "%d", t * 1000 }')
+
+	return 0
 }
 
 #
@@ -341,6 +398,8 @@ if [ -n "$LINKS" ]; then
 	OUTBOUND="$TMPDIR/outbound.json"
 	SEEN_ENDPOINTS="$TMPDIR/seen-endpoints"
 	: > "$SEEN_ENDPOINTS"
+	LINKS_RAW="$TMPDIR/links.raw"
+	: > "$LINKS_RAW"
 	: > "$LINKS" || exit 1
 
 	CONFIG_COUNT=$(jsonfilter -i "$INPUT" -e '@[*]' | wc -l)
@@ -399,15 +458,28 @@ if [ -n "$LINKS" ]; then
 
 			printf '%s\n' "$ENDPOINT" >> "$SEEN_ENDPOINTS"
 
+			if ! reachable "$ADDRESS" "$PORT"; then
+				echo "Skipping unreachable $PROTOCOL: $ADDRESS:$PORT" >&2
+				OUTBOUND_INDEX=$((OUTBOUND_INDEX + 1))
+				continue
+			fi
+
 			LINK_COUNT=$((LINK_COUNT + 1))
 			NAME="$REMARK"
 			[ -n "$NAME" ] || NAME="proxy-$LINK_COUNT"
 
-			case "$PROTOCOL" in
-				vless) link_vless >> "$LINKS" ;;
-				vmess) link_vmess >> "$LINKS" ;;
-				shadowsocks) link_ss >> "$LINKS" ;;
-			esac
+			#
+			# Every line is "<latency_ms> <link>" until the end,
+			# links never contain a raw space.
+			#
+			{
+				printf '%s ' "$LAT_MS"
+				case "$PROTOCOL" in
+					vless) link_vless ;;
+					vmess) link_vmess ;;
+					shadowsocks) link_ss ;;
+				esac
+			} >> "$LINKS_RAW"
 
 			OUTBOUND_INDEX=$((OUTBOUND_INDEX + 1))
 		done
@@ -419,6 +491,12 @@ if [ -n "$LINKS" ]; then
 		echo "Error: no vless/vmess/ss outbounds found" >&2
 		exit 1
 	}
+
+	if [ -n "$CHECK" ]; then
+		sort -n "$LINKS_RAW" | sed 's/^[0-9]* //' > "$LINKS"
+	else
+		sed 's/^[0-9]* //' "$LINKS_RAW" > "$LINKS"
+	fi
 
 	echo "Links created: $LINK_COUNT" >&2
 	exit 0
@@ -537,6 +615,12 @@ while [ "$CONFIG_INDEX" -lt "$CONFIG_COUNT" ]; do
 			fi
 
 			printf '%s\n' "$ENDPOINT" >> "$SEEN_ENDPOINTS"
+
+			if ! reachable "$ADDRESS" "$PORT"; then
+				echo "Skipping unreachable VLESS: $ADDRESS:$PORT" >&2
+				OUTBOUND_INDEX=$((OUTBOUND_INDEX + 1))
+				continue
+			fi
 
 			PROXY_INDEX=$((PROXY_INDEX + 1))
 
