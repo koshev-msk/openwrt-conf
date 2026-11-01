@@ -1,0 +1,726 @@
+#!/bin/sh
+
+usage() {
+	cat <<EOF
+Usage:
+  $0 -u <url> -o <output_dir> [-p <proxy>]
+  $0 -s <subscription_file> -o <output_dir>
+  $0 -u <url> -c <output_file> [-p <proxy>]
+  $0 -s <subscription_file> -c <output_file>
+  $0 -u <url> -l <links_file> [-p <proxy>]
+  $0 -s <subscription_file> -l <links_file>
+
+Options:
+  -u <url>              Get subscription from URL
+  -s <file>             Use existing subscription JSON
+  -o <directory>        Split subscription into separate configs
+  -c <file>             Build one combined Xray config
+  -l <file>             Write share links (vless:// vmess:// ss://),
+                        one per line; "-" means stdout
+  -p <proxy>            Proxy for subscription download (curl -x)
+  -h                    Show this help
+
+Examples:
+  $0 -u https://example.com/sub -c /tmp/xray.json
+  $0 -u https://example.com/sub -c /tmp/xray.json -p http://127.0.0.1:8080
+  $0 -u https://example.com/sub -c /tmp/xray.json -p socks5://127.0.0.1:1080
+  $0 -s /tmp/happ-sub -c /tmp/xray.json
+  $0 -s /tmp/happ-sub -l /tmp/links.txt
+EOF
+	exit 1
+}
+
+URL=
+SUBSCRIBE=
+OUTPUT=
+COMBINED=
+LINKS=
+PROXY=
+
+while getopts "u:s:o:c:l:p:h" opt; do
+	case "$opt" in
+		u) URL="$OPTARG" ;;
+		s) SUBSCRIBE="$OPTARG" ;;
+		o) OUTPUT="$OPTARG" ;;
+		c) COMBINED="$OPTARG" ;;
+		l) LINKS="$OPTARG" ;;
+		p) PROXY="$OPTARG" ;;
+		h) usage ;;
+		\?) usage ;;
+	esac
+done
+
+#
+# Exactly one input source.
+#
+if [ -n "$URL" ] && [ -n "$SUBSCRIBE" ]; then
+	echo "Error: -u and -s are mutually exclusive" >&2
+	exit 1
+fi
+
+if [ -z "$URL" ] && [ -z "$SUBSCRIBE" ]; then
+	echo "Error: one of -u or -s is required" >&2
+	exit 1
+fi
+
+#
+# Exactly one output mode.
+#
+MODES=0
+[ -n "$OUTPUT" ] && MODES=$((MODES + 1))
+[ -n "$COMBINED" ] && MODES=$((MODES + 1))
+[ -n "$LINKS" ] && MODES=$((MODES + 1))
+
+if [ "$MODES" -gt 1 ]; then
+	echo "Error: -o, -c and -l are mutually exclusive" >&2
+	exit 1
+fi
+
+if [ "$MODES" -eq 0 ]; then
+	echo "Error: one of -o, -c or -l is required" >&2
+	exit 1
+fi
+
+#
+# Proxy is meaningful only when downloading the subscription.
+#
+if [ -n "$PROXY" ] && [ -z "$URL" ]; then
+	echo "Error: -p can only be used with -u" >&2
+	exit 1
+fi
+
+#
+# Get subscription.
+#
+if [ -n "$URL" ]; then
+	. /etc/openwrt_release
+	#DISTRIB_ID='OpenWrt'
+	#DISTRIB_RELEASE='24.10.6'
+	mac="$(cat /sys/class/net/eth0/address)"
+	model="$(awk '{print $1"/"$2}' /proc/device-tree/model)"
+
+	seed="${mac}|${model}"
+
+	hex="$(printf '%s' "$seed" | md5sum | cut -c1-32)"
+
+	# UUID v3 (MD5):
+	# version = 3
+	hex="$(printf '%s' "$hex" | sed \
+		-e 's/^\(........\)\(....\)\(....\)\(....\)\(............\)$/\1-\2-3\3-\4-\5/')"
+
+	# variant = RFC 4122
+	variant="$(printf '%s' "$hex" | cut -d- -f4)"
+	first="$(printf '%s' "$variant" | cut -c1)"
+	rest="$(printf '%s' "$variant" | cut -c2-)"
+	case "$first" in
+ 		0|1|2|3) first=8 ;;
+ 		4|5|6|7) first=9 ;;
+ 		8|9|a|b|A|B) first=b ;;
+ 		*) first=8 ;;
+	esac
+
+	HAPP_HWID="$(printf '%s' "$hex" | cut -d- -f1-3)-${first}${rest}-$(printf '%s' "$hex" | cut -d- -f5)"
+	INPUT=$(mktemp) || exit 1
+
+	cleanup() {
+		rm -f "$INPUT"
+		[ -n "$TMPDIR" ] && rm -rf "$TMPDIR"
+	}
+
+	trap cleanup EXIT
+
+	if [ -n "$PROXY" ]; then
+		PROXY_ARGS="-x $PROXY"
+	fi
+	curl -L -sS -H "X-HWID:${HAPP_HWID}" -H "User-Agent:Happ/3.26.1" -H "Accept:text/plain" $PROXY_ARGS \
+		-H "X-Device-Model:${model}" -H "X-Device-Os:${DISTRIB_ID}/${DISTRIB_RELEASE}" -H "X-Ver-Os:$(uname -ro)" \
+		-D /tmp/happ-headers2 \
+		"$URL" \
+		-o "$INPUT" || {
+			echo "Error: failed to download subscription" >&2
+			exit 1
+		}
+else
+	INPUT="$SUBSCRIBE"
+fi
+
+#
+# Check input file.
+#
+[ -f "$INPUT" ] || {
+	echo "Error: subscription file not found: $INPUT" >&2
+	exit 1
+}
+
+#
+# Check JSON.
+#
+jsonfilter -i "$INPUT" -e '@' >/dev/null 2>&1 || {
+	echo "Error: invalid subscription JSON: $INPUT" >&2
+	exit 1
+}
+
+#
+# Link mode:
+# print share links (vless:// vmess:// ss://) for every unique
+# server found in the subscription.
+#
+# Helpers are plain ash: sed/tr/base64 only.
+#
+jf() {
+	jsonfilter -i "$OUTBOUND" -e "$1" 2>/dev/null
+}
+
+urlenc() {
+	printf '%s' "$1" | sed \
+		-e 's/%/%25/g' -e 's/ /%20/g' -e 's/#/%23/g' -e 's/&/%26/g' \
+		-e 's/+/%2B/g' -e 's/=/%3D/g' -e 's/?/%3F/g' -e 's/\//%2F/g' \
+		-e 's/:/%3A/g' -e 's/@/%40/g' -e 's/,/%2C/g' -e 's/"/%22/g'
+}
+
+jsesc() {
+	printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'
+}
+
+b64() {
+	base64 | tr -d '\n'
+}
+
+# Append "&name=value" to $Q, skipping empty values.
+qadd() {
+	[ -n "$2" ] || return 0
+	Q="${Q}${Q:+&}$1=$(urlenc "$2")"
+}
+
+# Wrap IPv6 literals in [].
+hostfmt() {
+	case "$1" in
+		*:*) printf '[%s]' "$1" ;;
+		*) printf '%s' "$1" ;;
+	esac
+}
+
+# Comma-joined array, e.g. alpn.
+jf_list() {
+	jf "$1" | tr '\n' ',' | sed 's/,$//'
+}
+
+link_vless() {
+	UUID=$(jf '@.settings.vnext[0].users[0].id')
+	ENC=$(jf '@.settings.vnext[0].users[0].encryption')
+	FLOW=$(jf '@.settings.vnext[0].users[0].flow')
+	[ -n "$ENC" ] || ENC=none
+
+	NET=$(jf '@.streamSettings.network')
+	SEC=$(jf '@.streamSettings.security')
+	[ -n "$NET" ] || NET=tcp
+	[ -n "$SEC" ] || SEC=none
+
+	Q=
+	qadd type "$NET"
+	qadd security "$SEC"
+	qadd encryption "$ENC"
+	qadd flow "$FLOW"
+
+	case "$NET" in
+		tcp)
+			qadd headerType "$(jf '@.streamSettings.tcpSettings.header.type')"
+			;;
+		ws)
+			qadd path "$(jf '@.streamSettings.wsSettings.path')"
+			qadd host "$(jf '@.streamSettings.wsSettings.headers.Host')"
+			;;
+		grpc)
+			qadd serviceName "$(jf '@.streamSettings.grpcSettings.serviceName')"
+			qadd authority "$(jf '@.streamSettings.grpcSettings.authority')"
+			[ "$(jf '@.streamSettings.grpcSettings.mode')" = "true" ] &&
+				qadd mode multi
+			;;
+		xhttp|splithttp)
+			qadd path "$(jf '@.streamSettings.xhttpSettings.path')"
+			qadd host "$(jf '@.streamSettings.xhttpSettings.host')"
+			qadd mode "$(jf '@.streamSettings.xhttpSettings.mode')"
+			;;
+	esac
+
+	case "$SEC" in
+		reality)
+			qadd sni "$(jf '@.streamSettings.realitySettings.serverName')"
+			qadd fp "$(jf '@.streamSettings.realitySettings.fingerprint')"
+			qadd pbk "$(jf '@.streamSettings.realitySettings.publicKey')"
+			qadd sid "$(jf '@.streamSettings.realitySettings.shortId')"
+			qadd spx "$(jf '@.streamSettings.realitySettings.spiderX')"
+			;;
+		tls)
+			qadd sni "$(jf '@.streamSettings.tlsSettings.serverName')"
+			qadd fp "$(jf '@.streamSettings.tlsSettings.fingerprint')"
+			qadd alpn "$(jf_list '@.streamSettings.tlsSettings.alpn[*]')"
+			;;
+	esac
+
+	printf 'vless://%s@%s:%s?%s#%s\n' \
+		"$UUID" "$(hostfmt "$ADDRESS")" "$PORT" "$Q" "$(urlenc "$NAME")"
+}
+
+link_vmess() {
+	UUID=$(jf '@.settings.vnext[0].users[0].id')
+	AID=$(jf '@.settings.vnext[0].users[0].alterId')
+	SCY=$(jf '@.settings.vnext[0].users[0].security')
+	[ -n "$AID" ] || AID=0
+	[ -n "$SCY" ] || SCY=auto
+
+	NET=$(jf '@.streamSettings.network')
+	SEC=$(jf '@.streamSettings.security')
+	[ -n "$NET" ] || NET=tcp
+
+	TYPE=none
+	VHOST=
+	VPATH=
+	case "$NET" in
+		tcp)
+			T=$(jf '@.streamSettings.tcpSettings.header.type')
+			[ -n "$T" ] && TYPE="$T"
+			;;
+		ws)
+			VPATH=$(jf '@.streamSettings.wsSettings.path')
+			VHOST=$(jf '@.streamSettings.wsSettings.headers.Host')
+			;;
+		grpc)
+			VPATH=$(jf '@.streamSettings.grpcSettings.serviceName')
+			;;
+		xhttp|splithttp)
+			VPATH=$(jf '@.streamSettings.xhttpSettings.path')
+			VHOST=$(jf '@.streamSettings.xhttpSettings.host')
+			;;
+	esac
+
+	TLS=
+	SNI=
+	FP=
+	ALPN=
+	if [ "$SEC" = "tls" ]; then
+		TLS=tls
+		SNI=$(jf '@.streamSettings.tlsSettings.serverName')
+		FP=$(jf '@.streamSettings.tlsSettings.fingerprint')
+		ALPN=$(jf_list '@.streamSettings.tlsSettings.alpn[*]')
+	fi
+
+	JSON=$(printf '{"v":"2","ps":"%s","add":"%s","port":"%s","id":"%s","aid":"%s","scy":"%s","net":"%s","type":"%s","host":"%s","path":"%s","tls":"%s","sni":"%s","alpn":"%s","fp":"%s"}' \
+		"$(jsesc "$NAME")" "$(jsesc "$ADDRESS")" "$PORT" "$UUID" "$AID" \
+		"$SCY" "$NET" "$TYPE" "$(jsesc "$VHOST")" "$(jsesc "$VPATH")" \
+		"$TLS" "$(jsesc "$SNI")" "$ALPN" "$FP")
+
+	printf 'vmess://%s\n' "$(printf '%s' "$JSON" | b64)"
+}
+
+link_ss() {
+	METHOD=$(jf '@.settings.servers[0].method')
+	PASSWORD=$(jf '@.settings.servers[0].password')
+
+	# SIP002: base64url(method:password), no padding.
+	USERINFO=$(printf '%s:%s' "$METHOD" "$PASSWORD" |
+		b64 | tr '+/' '-_' | tr -d '=')
+
+	printf 'ss://%s@%s:%s#%s\n' \
+		"$USERINFO" "$(hostfmt "$ADDRESS")" "$PORT" "$(urlenc "$NAME")"
+}
+
+if [ -n "$LINKS" ]; then
+	[ "$LINKS" = "-" ] && LINKS=/dev/stdout
+
+	TMPDIR=$(mktemp -d) || exit 1
+
+	# In -s mode INPUT is the user's own file: never remove it.
+	cleanup() {
+		[ -n "$URL" ] && rm -f "$INPUT"
+		rm -rf "$TMPDIR"
+	}
+
+	trap cleanup EXIT
+
+	OUTBOUND="$TMPDIR/outbound.json"
+	SEEN_ENDPOINTS="$TMPDIR/seen-endpoints"
+	: > "$SEEN_ENDPOINTS"
+	: > "$LINKS" || exit 1
+
+	CONFIG_COUNT=$(jsonfilter -i "$INPUT" -e '@[*]' | wc -l)
+
+	CONFIG_INDEX=0
+	LINK_COUNT=0
+
+	while [ "$CONFIG_INDEX" -lt "$CONFIG_COUNT" ]; do
+
+		REMARK=$(jsonfilter -i "$INPUT" \
+			-e "@[$CONFIG_INDEX].remarks" 2>/dev/null)
+
+		OUTBOUND_COUNT=$(
+			jsonfilter -i "$INPUT" \
+				-e "@[$CONFIG_INDEX].outbounds[*]" |
+				wc -l
+		)
+
+		OUTBOUND_INDEX=0
+
+		while [ "$OUTBOUND_INDEX" -lt "$OUTBOUND_COUNT" ]; do
+
+			jsonfilter -i "$INPUT" \
+				-e "@[$CONFIG_INDEX].outbounds[$OUTBOUND_INDEX]" \
+				> "$OUTBOUND" || exit 1
+
+			PROTOCOL=$(jf '@.protocol')
+
+			case "$PROTOCOL" in
+				vless|vmess)
+					ADDRESS=$(jf '@.settings.vnext[0].address')
+					PORT=$(jf '@.settings.vnext[0].port')
+					;;
+				shadowsocks)
+					ADDRESS=$(jf '@.settings.servers[0].address')
+					PORT=$(jf '@.settings.servers[0].port')
+					;;
+				*)
+					OUTBOUND_INDEX=$((OUTBOUND_INDEX + 1))
+					continue
+					;;
+			esac
+
+			[ -n "$ADDRESS" ] && [ -n "$PORT" ] || {
+				echo "Error: $PROTOCOL outbound has no address/port" >&2
+				exit 1
+			}
+
+			ENDPOINT="${ADDRESS}|${PORT}"
+
+			if grep -F -x -q "$ENDPOINT" "$SEEN_ENDPOINTS"; then
+				echo "Skipping duplicate $PROTOCOL: $ADDRESS:$PORT" >&2
+				OUTBOUND_INDEX=$((OUTBOUND_INDEX + 1))
+				continue
+			fi
+
+			printf '%s\n' "$ENDPOINT" >> "$SEEN_ENDPOINTS"
+
+			LINK_COUNT=$((LINK_COUNT + 1))
+			NAME="$REMARK"
+			[ -n "$NAME" ] || NAME="proxy-$LINK_COUNT"
+
+			case "$PROTOCOL" in
+				vless) link_vless >> "$LINKS" ;;
+				vmess) link_vmess >> "$LINKS" ;;
+				shadowsocks) link_ss >> "$LINKS" ;;
+			esac
+
+			OUTBOUND_INDEX=$((OUTBOUND_INDEX + 1))
+		done
+
+		CONFIG_INDEX=$((CONFIG_INDEX + 1))
+	done
+
+	[ "$LINK_COUNT" -gt 0 ] || {
+		echo "Error: no vless/vmess/ss outbounds found" >&2
+		exit 1
+	}
+
+	echo "Links created: $LINK_COUNT" >&2
+	exit 0
+fi
+
+#
+# Old mode:
+# split subscription into individual configs.
+#
+if [ -n "$OUTPUT" ]; then
+	mkdir -p "$OUTPUT" || exit 1
+
+	count=$(jsonfilter -i "$INPUT" -e '@[*]' | wc -l)
+
+	i=0
+	while [ "$i" -lt "$count" ]; do
+		jsonfilter -i "$INPUT" -e "@[$i]" > "$OUTPUT/$i.json" || exit 1
+		i=$((i + 1))
+	done
+
+	echo "Parsed $count configs into $OUTPUT"
+	exit 0
+fi
+
+#
+# Combined mode.
+#
+
+TMPDIR=$(mktemp -d) || exit 1
+
+cleanup() {
+	rm -f "$INPUT"
+	rm -rf "$TMPDIR"
+}
+
+trap cleanup EXIT
+
+#
+# Extract common parts from the first HAPP config.
+#
+DNS="$TMPDIR/dns.json"
+INBOUNDS="$TMPDIR/inbounds.json"
+RULES="$TMPDIR/rules.json"
+
+jsonfilter -i "$INPUT" -e '@[0].dns' > "$DNS" || exit 1
+jsonfilter -i "$INPUT" -e '@[0].inbounds' > "$INBOUNDS" || exit 1
+jsonfilter -i "$INPUT" -e '@[0].routing.rules' > "$RULES" || exit 1
+
+#
+# Number of configs in subscription.
+#
+CONFIG_COUNT=$(jsonfilter -i "$INPUT" -e '@[*]' | wc -l)
+
+#
+# Collect VLESS outbounds.
+#
+OUTBOUND_DIR="$TMPDIR/outbounds"
+mkdir -p "$OUTBOUND_DIR" || exit 1
+
+#
+# Unique server endpoints: address + port.
+#
+SEEN_ENDPOINTS="$TMPDIR/seen-endpoints"
+: > "$SEEN_ENDPOINTS"
+
+CONFIG_INDEX=0
+PROXY_INDEX=0
+
+while [ "$CONFIG_INDEX" -lt "$CONFIG_COUNT" ]; do
+
+	OUTBOUND_COUNT=$(
+		jsonfilter -i "$INPUT" \
+			-e "@[$CONFIG_INDEX].outbounds[*]" |
+			wc -l
+	)
+
+	OUTBOUND_INDEX=0
+
+	while [ "$OUTBOUND_INDEX" -lt "$OUTBOUND_COUNT" ]; do
+
+		OUTBOUND="$TMPDIR/outbound.json"
+
+		jsonfilter -i "$INPUT" \
+			-e "@[$CONFIG_INDEX].outbounds[$OUTBOUND_INDEX]" \
+			> "$OUTBOUND" || exit 1
+
+		PROTOCOL=$(jsonfilter -i "$OUTBOUND" -e '@.protocol' 2>/dev/null)
+
+		if [ "$PROTOCOL" = "vless" ]; then
+
+			#
+			# Deduplicate by VLESS server address + port.
+			#
+			ADDRESS=$(jsonfilter -i "$OUTBOUND" \
+				-e '@.settings.vnext[0].address' 2>/dev/null)
+
+			PORT=$(jsonfilter -i "$OUTBOUND" \
+				-e '@.settings.vnext[0].port' 2>/dev/null)
+
+			[ -n "$ADDRESS" ] || {
+				echo "Error: VLESS outbound has no server address" >&2
+				exit 1
+			}
+
+			[ -n "$PORT" ] || {
+				echo "Error: VLESS outbound has no server port" >&2
+				exit 1
+			}
+
+			ENDPOINT="${ADDRESS}|${PORT}"
+
+			if grep -F -x -q "$ENDPOINT" "$SEEN_ENDPOINTS"; then
+				echo "Skipping duplicate VLESS: $ADDRESS:$PORT"
+				OUTBOUND_INDEX=$((OUTBOUND_INDEX + 1))
+				continue
+			fi
+
+			printf '%s\n' "$ENDPOINT" >> "$SEEN_ENDPOINTS"
+
+			PROXY_INDEX=$((PROXY_INDEX + 1))
+
+			#
+			# HAPP outbound objects have "tag" as their first field.
+			# Rename only that field.
+			#
+			sed \
+				"s/^{[[:space:]]*\"tag\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/{\"tag\": \"proxy-$PROXY_INDEX\"/" \
+				"$OUTBOUND" \
+				> "$OUTBOUND_DIR/$PROXY_INDEX.json" || exit 1
+
+			#
+			# Guard: fail loudly instead of shipping a duplicate tag
+			# if the anchor above ever fails to match for some reason.
+			#
+			grep -q "\"tag\": \"proxy-$PROXY_INDEX\"" \
+				"$OUTBOUND_DIR/$PROXY_INDEX.json" || {
+					echo "Error: failed to rename tag for outbound #$PROXY_INDEX" >&2
+					exit 1
+				}
+		fi
+
+		OUTBOUND_INDEX=$((OUTBOUND_INDEX + 1))
+	done
+
+	CONFIG_INDEX=$((CONFIG_INDEX + 1))
+done
+
+#
+# At least one VLESS outbound is required.
+#
+[ "$PROXY_INDEX" -gt 0 ] || {
+	echo "Error: no VLESS outbounds found" >&2
+	exit 1
+}
+
+#
+# Static direct outbound.
+#
+DIRECT='{
+	"protocol": "freedom",
+	"tag": "direct"
+}'
+
+#
+# Static block outbound.
+#
+BLOCK='{
+	"protocol": "blackhole",
+	"tag": "block"
+}'
+
+#
+# Static balancer.
+#
+# Every VLESS outbound is renamed to proxy-N,
+# therefore selector "proxy-" catches all of them.
+#
+BALANCER='{
+	"tag": "Super_Balancer",
+	"selector": [
+		"proxy-"
+	],
+	"strategy": {
+		"type": "leastLoad",
+		"settings": {
+			"maxRTT": "1s",
+			"expected": 2,
+			"baselines": [
+				"1s"
+			],
+			"tolerance": 0.01
+		}
+	},
+	"fallbackTag": "proxy-1"
+}'
+
+#
+# Build routing rules.
+#
+# jsonfilter gives us:
+#
+#   [ {...}, {...}, {...} ]
+#
+# Remove the closing ']' and append our final balancer rule.
+#
+RULES_BODY=$(cat "$RULES")
+RULES_BODY=${RULES_BODY%]}
+
+ROUTING_RULES="$TMPDIR/routing-rules.json"
+
+printf '%s' "$RULES_BODY" > "$ROUTING_RULES"
+
+cat >> "$ROUTING_RULES" <<EOF
+,
+	{
+		"type": "field",
+		"network": [
+			"tcp",
+			"udp"
+		],
+		"balancerTag": "Super_Balancer"
+	}
+]
+EOF
+
+#
+# Build outbounds array.
+#
+OUTBOUNDS="$TMPDIR/outbounds.json"
+
+printf '[\n' > "$OUTBOUNDS"
+
+I=1
+while [ "$I" -le "$PROXY_INDEX" ]; do
+
+	if [ "$I" -gt 1 ]; then
+		printf ',\n' >> "$OUTBOUNDS"
+	fi
+
+	cat "$OUTBOUND_DIR/$I.json" >> "$OUTBOUNDS"
+
+	I=$((I + 1))
+done
+
+printf ',\n' >> "$OUTBOUNDS"
+printf '%s,\n' "$DIRECT" >> "$OUTBOUNDS"
+printf '%s\n' "$BLOCK" >> "$OUTBOUNDS"
+printf ']\n' >> "$OUTBOUNDS"
+
+#
+# Build final Xray configuration.
+#
+{
+	printf '{\n'
+	printf '	"log": { "loglevel": "none" }'
+	printf ',\n'
+	
+	printf '	"dns": '
+	cat "$DNS"
+	printf ',\n'
+
+	printf '	"inbounds": '
+	cat "$INBOUNDS"
+	printf ',\n'
+
+	printf '	"outbounds": '
+	cat "$OUTBOUNDS"
+	printf ',\n'
+
+	printf '	"routing": {\n'
+
+	printf '		"domainMatcher": "hybrid",\n'
+	printf '		"domainStrategy": "AsIs",\n'
+
+	printf '		"rules": '
+	cat "$ROUTING_RULES"
+	printf ',\n'
+
+	printf '		"balancers": [\n'
+	printf '%s\n' "$BALANCER"
+	printf '		]\n'
+
+	printf '	},\n'
+
+	printf '	"burstObservatory": '
+	jsonfilter -i "$INPUT" -e '@[0].burstObservatory'
+
+	printf '\n}\n'
+} > "$COMBINED"
+
+#
+# Validate resulting JSON.
+#
+jsonfilter -i "$COMBINED" -e '@' >/dev/null 2>&1 || {
+	echo "Error: generated combined config is invalid JSON" >&2
+	echo "Output was: $COMBINED" >&2
+	exit 1
+}
+
+echo "Combined config created:"
+echo "  output:  $COMBINED"
+echo "  configs: $CONFIG_COUNT"
+echo "  VLESS:   $PROXY_INDEX"
+echo "  total:   $((PROXY_INDEX + 2)) outbounds"
+
