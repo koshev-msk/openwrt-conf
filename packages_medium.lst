@@ -4,7 +4,6 @@ luci-app-modeminfo
 luci-app-mmconfig
 luci-app-smstools3
 luci-app-pingcontrol
-#luci-app-bandix-plus
 luci-app-ifb-shaper
 luci-app-atinout
 luci-app-3proxy
@@ -75,6 +74,7 @@ kmod-usb3
 kmod-pptp
 kmod-nf-nathelper-extra
 kmod-button-hotplug
+kmod-nft-geoip
 # PPP
 ppp-mod-pptp
 # libraries
@@ -89,6 +89,7 @@ wpa-supplicant-mbedtls
 dnsmasq-full
 ifmetric
 ipset
+curl
 # FS support
 #e2fsprogs
 mkf2fs

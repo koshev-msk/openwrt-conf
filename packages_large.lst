@@ -13,11 +13,12 @@ luci-app-mwan3-ledhelper-nft
 luci-app-commands
 luci-app-ttl
 luci-app-ttyd
+luci-app-vless-core
 # Network proto
-luci-proto-xmm
+#luci-proto-xmm
 luci-proto-amneziawg
 luci-proto-openvpn
-luci-proto-tun2socks
+luci-proto-hev2socks
 #luci-proto-mbim
 #luci-proto-qmi
 #luci-proto-wireguard
@@ -83,6 +84,7 @@ kmod-pppol2tp
 kmod-pptp
 kmod-nf-nathelper-extra
 kmod-button-hotplug
+kmod-nft-geoip
 # AmneziaWG VPN kmod
 kmod-amneziawg
 # PPP
@@ -102,6 +104,7 @@ wpa-supplicant-openssl
 dnsmasq-full
 ifmetric
 ipset
+curl
 # FS support
 e2fsprogs
 mkf2fs
@@ -129,9 +132,7 @@ ip-full
 # LED
 mwan3-ledhelper-nft
 # Geoip maxminddb parser
-#maxminddb-dump-country
-forkop
-luci-app-forkop
+maxminddb-dump-country
 # apk
 -apk-mbedtls
 apk-openssl

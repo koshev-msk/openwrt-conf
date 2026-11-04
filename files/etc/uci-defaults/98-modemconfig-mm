@@ -73,11 +73,6 @@ get_modem_param(){
 		-e "FAILED=$['modem']['generic']['state-failed-reason']"
 }
 
-mmconfig_setup(){
-	uci set mmconfig.$ifmodemname=modem
-	uci set mmconfig.$ifmodemname.device=$DEVICE
-}
-
 iface_mm_bearer(){
 	case $VIDPID in
 		12d11*|0e8d71*) uci set network.$ifmodemname.init_epsbearer=none ;;
@@ -166,7 +161,7 @@ configure_mm_uci(){
 							uci set smstools3.$ifmodemname.net_check='0'
 							uci set smstools3.$ifmodemname.sig_check='1'
 						;;
-					esac
+			:		esac
 				;;
 				ttyACM*)
 					SMSPORT=${ATPORT%?}$((${ATPORT: -1}+2))
@@ -182,7 +177,6 @@ configure_mm_uci(){
 			uci add_list network.$ifmodemname.allowedauth=none
 			[ -x /usr/share/ssw_track.sh ] && uci set network.$ifmodemname.signalrate='10'
 			iface_mm_bearer
-			mmconfig_setup
 			setup_pingcontrol
 			uci add_list firewall.@zone[1].network=$ifmodemname
 			log_modem_found
@@ -202,6 +196,7 @@ mm_stuff(){
 	> /etc/config/mmconfig
 	standby_modems
 	configure_mm_uci
+	/etc/init.d/mmconfig restart
 }
 
 
@@ -233,13 +228,6 @@ do_run(){
 	MWAN_IFACES=""
 	mn=1
 	SMS_CONFIGURED=0
-
-	case $board in
-		b4com,mcr100|b4com,mcr200)
-			logger -t "$NODE" "b4com board uses QMI, not modemmanager. Skipping."
-			return 0
-		;;
-	esac
 
 	detect_modems
 
