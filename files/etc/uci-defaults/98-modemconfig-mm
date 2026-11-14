@@ -161,7 +161,7 @@ configure_mm_uci(){
 							uci set smstools3.$ifmodemname.net_check='0'
 							uci set smstools3.$ifmodemname.sig_check='1'
 						;;
-			:		esac
+					esac
 				;;
 				ttyACM*)
 					SMSPORT=${ATPORT%?}$((${ATPORT: -1}+2))
